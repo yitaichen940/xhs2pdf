@@ -116,7 +116,7 @@ class App:
         style.configure('Small.TButton', font=('Microsoft YaHei UI', 10), padding=(10, 5))
 
         # Checkbutton
-        style.configure('TCheckbutton', background=BG, foreground=TEXT)
+        style.configure('TCheckbutton', background=BG, foreground=TEXT, indicatorsize=18, font=('Microsoft YaHei UI', 10))
         style.map('TCheckbutton', background=[('active', BG)])
 
         # Progressbar
@@ -159,7 +159,7 @@ class App:
         tk.Label(url_inner, text="粘贴链接或分享文本，自动识别", font=("Microsoft YaHei UI", 10),
                  bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(0, 8))
 
-        self.url_entry = tk.Text(url_inner, height=3, font=("Microsoft YaHei UI", 11), wrap=tk.WORD,
+        self.url_entry = tk.Text(url_inner, height=2, font=("Microsoft YaHei UI", 11), wrap=tk.WORD,
                                   relief=tk.FLAT, borderwidth=0, padx=0, pady=0,
                                   bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
         self.url_entry.pack(fill=tk.BOTH, expand=True)
@@ -179,44 +179,60 @@ class App:
         self.out_dir_var = tk.StringVar(value=SCRIPT_DIR)
         self.out_dir_label = tk.Label(opt_frame, text=self._short_path(SCRIPT_DIR),
                                        font=("Microsoft YaHei UI", 9), fg=TEXT_SEC, bg=BG,
-                                       anchor=tk.W, cursor="hand2")
+                                       anchor=tk.W)
         self.out_dir_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        self.out_dir_label.bind("<Button-1>", lambda e: self._choose_out_dir())
+        ttk.Button(opt_frame, text="修改", style='Small.TButton',
+                   command=self._choose_out_dir).pack(side=tk.LEFT, padx=(4, 0))
 
         # === Cookie panel ===
         self.cookie_frame = tk.Frame(main, bg=CARD_BG, highlightthickness=2, highlightbackground=BORDER)
         ck_inner = tk.Frame(self.cookie_frame, bg=CARD_BG, padx=16, pady=16)
         ck_inner.pack(fill=tk.X)
 
+        # Section header
         tk.Label(ck_inner, text="Cookie 设置", font=("Microsoft YaHei UI", 11, "bold"),
                  bg=CARD_BG, fg=TEXT).pack(anchor=tk.W)
-        tk.Label(ck_inner, text="浏览器 F12 → Application → Cookies → 全选复制",
-                 font=("Microsoft YaHei UI", 9), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(4, 8))
+        tk.Label(ck_inner, text="浏览器 F12 → Application → Cookies → 全选复制后粘贴到下方",
+                 font=("Microsoft YaHei UI", 9), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(2, 0))
 
-        self.cookie_text = tk.Text(ck_inner, height=2, font=("Consolas", 9), wrap=tk.WORD,
-                                    relief=tk.FLAT, borderwidth=0, padx=0, pady=0,
-                                    bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
-        self.cookie_text.pack(fill=tk.X, pady=(0, 10))
+        # Content area with subtle border
+        ck_content = tk.Frame(ck_inner, bg='#f8f8f8', highlightthickness=1, highlightbackground='#e0e0e0')
+        ck_content.pack(fill=tk.X, pady=(8, 8), ipady=4)
 
+        self.cookie_text = tk.Text(ck_content, height=3, font=("Consolas", 8), wrap=tk.WORD,
+                                    relief=tk.FLAT, borderwidth=0, padx=8, pady=6,
+                                    bg='#f8f8f8', fg=TEXT, insertbackground=TEXT)
+        self.cookie_text.pack(fill=tk.X)
+
+        # Separator
+        ttk.Separator(ck_inner, orient='horizontal').pack(fill=tk.X, pady=(0, 8))
+
+        # Action buttons
         ck_btn_row = tk.Frame(ck_inner, bg=CARD_BG)
         ck_btn_row.pack(fill=tk.X)
-        ttk.Button(ck_btn_row, text="保存", command=self._save_cookie).pack(side=tk.LEFT, padx=(0, 6))
-        ttk.Button(ck_btn_row, text="测试", command=self._test_cookie).pack(side=tk.LEFT, padx=(0, 6))
-        ttk.Button(ck_btn_row, text="登录小红书", command=lambda: webbrowser.open('https://www.xiaohongshu.com')).pack(side=tk.LEFT)
+        ttk.Button(ck_btn_row, text="保存Cookie", style='Small.TButton',
+                   command=self._save_cookie).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(ck_btn_row, text="测试Cookie", style='Small.TButton',
+                   command=self._test_cookie).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(ck_btn_row, text="打开登录页", style='Small.TButton',
+                   command=lambda: webbrowser.open('https://www.xiaohongshu.com')).pack(side=tk.LEFT)
 
         # === Action buttons ===
         btn_frame = ttk.Frame(main)
         btn_frame.pack(fill=tk.X, pady=(12, 10))
 
-        self.convert_btn = tk.Button(btn_frame, text="开始转换",
-                                      font=("Microsoft YaHei UI", 13, "bold"),
-                                      fg='#ffffff', bg=ACCENT,
-                                      activebackground='#0084e0', activeforeground='#ffffff',
-                                      relief=tk.FLAT, bd=0, padx=40, pady=14, cursor="hand2",
-                                      command=self.start_convert)
+        # Blue primary button
+        style.configure('Accent.TButton', font=('Microsoft YaHei UI', 11, 'bold'),
+                         padding=(18, 8), relief='solid', borderwidth=1,
+                         background=ACCENT, bordercolor=ACCENT, foreground='#ffffff')
+        style.map('Accent.TButton',
+                  background=[('active', '#0084e0'), ('!disabled', ACCENT)],
+                  bordercolor=[('active', '#0084e0'), ('!disabled', ACCENT)],
+                  foreground=[('disabled', '#c0c0c0'), ('!disabled', '#ffffff')])
+
+        self.convert_btn = ttk.Button(btn_frame, text="开始转换",
+                                       style='Accent.TButton', command=self.start_convert)
         self.convert_btn.pack(side=tk.LEFT, padx=(0, 8))
-        self._add_hover(self.convert_btn, ACCENT, '#0084e0', '#ffffff')
-        self._add_press(self.convert_btn, '#0084e0', '#0070c0')
 
         self.open_btn = ttk.Button(btn_frame, text="打开PDF", command=self.open_pdf, state=tk.DISABLED)
         self.open_btn.pack(side=tk.LEFT, padx=(0, 6))
@@ -459,28 +475,28 @@ class App:
     def show_cookie_help(self):
         dlg = tk.Toplevel(self.root)
         dlg.title("使用教程")
-        dlg.geometry("520x600")
+        dlg.geometry("560x620")
         dlg.resizable(False, False)
         dlg.transient(self.root)
+        dlg.configure(bg='#fafafa')
 
-        canvas = tk.Canvas(dlg, highlightthickness=0)
+        canvas = tk.Canvas(dlg, highlightthickness=0, bg='#fafafa', width=540)
         scrollbar = ttk.Scrollbar(dlg, orient=tk.VERTICAL, command=canvas.yview)
         scroll_frame = ttk.Frame(canvas)
         scroll_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
-        canvas.create_window((0, 0), window=scroll_frame, anchor=tk.NW)
+        win_id = canvas.create_window((0, 0), window=scroll_frame, anchor=tk.NW, width=540)
         canvas.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        # Mouse wheel scrolling
+        # Mouse wheel scrolling - bind to everything
         def _on_mousewheel(event):
             canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
-        canvas.bind("<MouseWheel>", _on_mousewheel)
-        scroll_frame.bind("<MouseWheel>", _on_mousewheel)
-        # Also bind for all child widgets via tag
-        canvas.bind("<Enter>", lambda e: canvas.bind_all("<MouseWheel>", _on_mousewheel))
-        canvas.bind("<Leave>", lambda e: canvas.unbind_all("<MouseWheel>"))
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        for w in (dlg, canvas, scroll_frame):
+            w.bind("<MouseWheel>", _on_mousewheel)
+        dlg.bind("<Enter>", lambda e: dlg.bind_all("<MouseWheel>", _on_mousewheel), add="+")
+        dlg.bind("<Leave>", lambda e: dlg.unbind_all("<MouseWheel>"), add="+")
 
         frame = ttk.Frame(scroll_frame, padding=16)
         frame.pack(fill=tk.BOTH, expand=True)
@@ -489,10 +505,10 @@ class App:
             ttk.Label(frame, text=text, font=("Microsoft YaHei UI", 12, "bold")).pack(anchor=tk.W, pady=(12, 4))
 
         def body(text):
-            ttk.Label(frame, text=text, font=("Microsoft YaHei UI", 9), wraplength=470).pack(anchor=tk.W, padx=(8, 0))
+            ttk.Label(frame, text=text, font=("Microsoft YaHei UI", 10), wraplength=470).pack(anchor=tk.W, padx=(8, 0))
 
         def step(num, text):
-            ttk.Label(frame, text=f"  {num}. {text}", font=("Microsoft YaHei UI", 9), wraplength=460).pack(anchor=tk.W, padx=(8, 0))
+            ttk.Label(frame, text=f"  {num}. {text}", font=("Microsoft YaHei UI", 10), wraplength=460).pack(anchor=tk.W, padx=(8, 0))
 
         # === Section 0: Environment ===
         title("零、环境配置（首次使用必读）")
