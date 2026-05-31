@@ -13,7 +13,7 @@ import webbrowser
 if sys.platform == 'win32':
     try:
         import ctypes
-        ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PerMonitorV2
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)  # System aware
     except Exception:
         pass
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
@@ -81,16 +81,15 @@ class App:
     def __init__(self, root):
         self.root = root
         self.root.title("小红书笔记 → PDF")
-        self.root.geometry("560x560")
+        self.root.geometry("640x620")
         self.root.resizable(True, True)
-        self.root.minsize(480, 480)
-        self.root.configure(bg='#f0f2f5')
-
+        self.root.minsize(520, 520)
         # === Instagram Style ===
         style = ttk.Style()
         style.theme_use('clam')
 
         BG = '#fafafa'
+        self.root.configure(bg=BG)
         CARD_BG = '#ffffff'
         ACCENT = '#0095f6'
         ACCENT_HOVER = '#1877f2'
@@ -139,12 +138,13 @@ class App:
         status_row.pack(fill=tk.X, pady=(0, 12))
 
         self.env_btn = tk.Label(status_row, text="● 环境检测",
-                                 font=("Segoe UI", 8), fg=WARNING, bg=BG, cursor="hand2")
-        self.env_btn.pack(side=tk.LEFT, padx=(0, 12))
+                                 font=("Microsoft YaHei UI", 9), fg=WARNING, bg=BG, cursor="hand2")
+        self.env_btn.pack(side=tk.LEFT, padx=(0, 16))
         self.env_btn.bind("<Button-1>", lambda e: self.check_env())
+        self._add_label_hover(self.env_btn)
 
         self.cookie_status = tk.Label(status_row, text="● Cookie: 未设置",
-                                       font=("Segoe UI", 8), fg=WARNING, bg=BG)
+                                       font=("Microsoft YaHei UI", 9), fg=WARNING, bg=BG)
         self.cookie_status.pack(side=tk.LEFT)
 
         ttk.Button(status_row, text="?", width=2, style='Small.TButton',
@@ -157,10 +157,10 @@ class App:
         url_inner = tk.Frame(url_card, bg=CARD_BG, padx=16, pady=14)
         url_inner.pack(fill=tk.X)
 
-        tk.Label(url_inner, text="粘贴链接或分享文本，自动识别", font=("Segoe UI", 9),
+        tk.Label(url_inner, text="粘贴链接或分享文本，自动识别", font=("Microsoft YaHei UI", 9),
                  bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(0, 8))
 
-        self.url_entry = tk.Text(url_inner, height=3, font=("Segoe UI", 10), wrap=tk.WORD,
+        self.url_entry = tk.Text(url_inner, height=3, font=("Microsoft YaHei UI", 10), wrap=tk.WORD,
                                   relief=tk.FLAT, borderwidth=0, padx=0, pady=0,
                                   bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
         self.url_entry.pack(fill=tk.X)
@@ -179,7 +179,7 @@ class App:
         ttk.Label(opt_frame, text="输出", style='Hint.TLabel').pack(side=tk.LEFT, padx=(12, 4))
         self.out_dir_var = tk.StringVar(value=SCRIPT_DIR)
         self.out_dir_label = tk.Label(opt_frame, text=self._short_path(SCRIPT_DIR),
-                                       font=("Segoe UI", 8), fg=TEXT_SEC, bg=BG,
+                                       font=("Microsoft YaHei UI", 8), fg=TEXT_SEC, bg=BG,
                                        anchor=tk.W, cursor="hand2")
         self.out_dir_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.out_dir_label.bind("<Button-1>", lambda e: self._choose_out_dir())
@@ -189,10 +189,10 @@ class App:
         ck_inner = tk.Frame(self.cookie_frame, bg=CARD_BG, padx=16, pady=14)
         ck_inner.pack(fill=tk.X)
 
-        tk.Label(ck_inner, text="Cookie 设置", font=("Segoe UI", 10, "bold"),
+        tk.Label(ck_inner, text="Cookie 设置", font=("Microsoft YaHei UI", 10, "bold"),
                  bg=CARD_BG, fg=TEXT).pack(anchor=tk.W)
         tk.Label(ck_inner, text="浏览器 F12 → Application → Cookies → 全选复制",
-                 font=("Segoe UI", 8), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(4, 8))
+                 font=("Microsoft YaHei UI", 8), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(4, 8))
 
         self.cookie_text = tk.Text(ck_inner, height=2, font=("Consolas", 8), wrap=tk.WORD,
                                     relief=tk.FLAT, borderwidth=0, padx=0, pady=0,
@@ -210,12 +210,14 @@ class App:
         btn_frame.pack(fill=tk.X, pady=(12, 10))
 
         self.convert_btn = tk.Button(btn_frame, text="开始转换",
-                                      font=("Segoe UI", 11, "bold"),
+                                      font=("Microsoft YaHei UI", 12, "bold"),
                                       fg='#ffffff', bg=ACCENT,
-                                      activebackground=ACCENT_HOVER, activeforeground='#ffffff',
-                                      relief=tk.FLAT, bd=0, padx=32, pady=10, cursor="hand2",
+                                      activebackground='#0084e0', activeforeground='#ffffff',
+                                      relief=tk.FLAT, bd=0, padx=36, pady=12, cursor="hand2",
                                       command=self.start_convert)
         self.convert_btn.pack(side=tk.LEFT, padx=(0, 8))
+        self._add_hover(self.convert_btn, ACCENT, '#0084e0', '#ffffff')
+        self._add_press(self.convert_btn, '#0084e0', '#0070c0')
 
         self.open_btn = ttk.Button(btn_frame, text="打开PDF", command=self.open_pdf, state=tk.DISABLED)
         self.open_btn.pack(side=tk.LEFT, padx=(0, 6))
@@ -236,7 +238,7 @@ class App:
 
         log_header = tk.Frame(log_frame, bg=CARD_BG)
         log_header.pack(fill=tk.X, padx=16, pady=(12, 6))
-        tk.Label(log_header, text="状态", font=("Segoe UI", 9, "bold"),
+        tk.Label(log_header, text="状态", font=("Microsoft YaHei UI", 9, "bold"),
                  bg=CARD_BG, fg=TEXT).pack(side=tk.LEFT)
 
         self.log_text = tk.Text(log_frame, height=5, font=("Consolas", 9), wrap=tk.WORD,
@@ -246,7 +248,7 @@ class App:
         self.log_text.config(state=tk.DISABLED)
 
         # === Result ===
-        self.result_label = tk.Label(main, text="", font=("Segoe UI", 10, "bold"),
+        self.result_label = tk.Label(main, text="", font=("Microsoft YaHei UI", 10, "bold"),
                                       bg=BG, fg=TEXT)
         self.result_label.pack(pady=(10, 0))
 
@@ -255,6 +257,38 @@ class App:
         # Init
         self._refresh_cookie_status()
         self.root.after(300, self._auto_check_env)
+
+    def _add_label_hover(self, widget):
+        """Subtle dim on hover for clickable labels."""
+        def on_enter(e):
+            widget.config(fg='#555555')
+        def on_leave(e):
+            # restore original color based on current text
+            t = widget.cget('text')
+            if '✓' in t:
+                widget.config(fg='#58b942')
+            elif '✗' in t or '无效' in t or '过期' in t:
+                widget.config(fg='#ed4956')
+            else:
+                widget.config(fg='#d9920b')
+        widget.bind("<Enter>", on_enter)
+        widget.bind("<Leave>", on_leave)
+
+    def _add_hover(self, widget, normal_bg, hover_bg, fg):
+        def on_enter(e):
+            widget.config(bg=hover_bg)
+        def on_leave(e):
+            widget.config(bg=normal_bg)
+        widget.bind("<Enter>", on_enter)
+        widget.bind("<Leave>", on_leave)
+
+    def _add_press(self, widget, hover_bg, press_bg):
+        def on_press(e):
+            widget.config(bg=press_bg)
+        def on_release(e):
+            widget.config(bg=hover_bg)
+        widget.bind("<ButtonPress-1>", on_press)
+        widget.bind("<ButtonRelease-1>", on_release)
 
     def _short_path(self, path: str) -> str:
         if len(path) <= 50:
@@ -453,13 +487,13 @@ class App:
         frame.pack(fill=tk.BOTH, expand=True)
 
         def title(text):
-            ttk.Label(frame, text=text, font=("Segoe UI", 12, "bold")).pack(anchor=tk.W, pady=(12, 4))
+            ttk.Label(frame, text=text, font=("Microsoft YaHei UI", 12, "bold")).pack(anchor=tk.W, pady=(12, 4))
 
         def body(text):
-            ttk.Label(frame, text=text, font=("Segoe UI", 9), wraplength=470).pack(anchor=tk.W, padx=(8, 0))
+            ttk.Label(frame, text=text, font=("Microsoft YaHei UI", 9), wraplength=470).pack(anchor=tk.W, padx=(8, 0))
 
         def step(num, text):
-            ttk.Label(frame, text=f"  {num}. {text}", font=("Segoe UI", 9), wraplength=460).pack(anchor=tk.W, padx=(8, 0))
+            ttk.Label(frame, text=f"  {num}. {text}", font=("Microsoft YaHei UI", 9), wraplength=460).pack(anchor=tk.W, padx=(8, 0))
 
         # === Section 0: Environment ===
         title("零、环境配置（首次使用必读）")
