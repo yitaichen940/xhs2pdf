@@ -8,11 +8,18 @@ import tempfile
 import shutil
 import threading
 import webbrowser
+
+# High-DPI awareness (must be before tkinter import)
+if sys.platform == 'win32':
+    try:
+        import ctypes
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)  # PerMonitorV2
+    except Exception:
+        pass
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-
-if sys.platform == 'win32':
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
 from fetcher import (
     resolve_note_url, parse_note_id, fetch_note_html,
@@ -79,187 +86,169 @@ class App:
         self.root.minsize(480, 480)
         self.root.configure(bg='#f0f2f5')
 
-        # === Style configuration ===
+        # === Instagram Style ===
         style = ttk.Style()
         style.theme_use('clam')
 
-        # Color palette
-        BG = '#f0f2f5'
+        BG = '#fafafa'
         CARD_BG = '#ffffff'
-        ACCENT = '#2563eb'
-        ACCENT_HOVER = '#1d4ed8'
-        TEXT = '#1e293b'
-        TEXT_SEC = '#64748b'
-        BORDER = '#e2e8f0'
-        SUCCESS = '#16a34a'
-        WARNING = '#d97706'
-        DANGER = '#dc2626'
-        LOG_BG = '#1e293b'
-        LOG_FG = '#cbd5e1'
+        ACCENT = '#0095f6'
+        ACCENT_HOVER = '#1877f2'
+        TEXT = '#262626'
+        TEXT_SEC = '#8e8e8e'
+        BORDER = '#dbdbdb'
+        SUCCESS = '#78de54'
+        WARNING = '#f0a030'
+        DANGER = '#ed4956'
+        LOG_BG = '#fafafa'
+        LOG_FG = '#262626'
 
-        # Global defaults
-        style.configure('.', background=BG, foreground=TEXT, font=('Microsoft YaHei UI', 9))
+        style.configure('.', background=BG, foreground=TEXT, font=('Segoe UI', 9))
         style.configure('TFrame', background=BG)
-        style.configure('Card.TFrame', background=CARD_BG, relief='solid', borderwidth=1, bordercolor=BORDER)
+        style.configure('Card.TFrame', background=CARD_BG, relief='flat')
         style.configure('TLabel', background=BG, foreground=TEXT)
-        style.configure('Card.TLabel', background=CARD_BG, foreground=TEXT)
-        style.configure('Title.TLabel', font=('Microsoft YaHei UI', 15, 'bold'), foreground=TEXT)
-        style.configure('Hint.TLabel', font=('Microsoft YaHei UI', 9), foreground=TEXT_SEC)
-        style.configure('Small.TLabel', font=('Microsoft YaHei UI', 8), foreground=TEXT_SEC)
+        style.configure('Title.TLabel', font=('Segoe UI', 16, 'bold'), foreground=TEXT)
+        style.configure('Hint.TLabel', font=('Segoe UI', 9), foreground=TEXT_SEC)
 
         # Buttons
-        style.configure('TButton', font=('Microsoft YaHei UI', 9), padding=(12, 5), borderwidth=1,
-                         relief='solid', bordercolor='#cbd5e1', background=CARD_BG)
-        style.map('TButton', background=[('active', '#f1f5f9'), ('!disabled', CARD_BG)],
-                  bordercolor=[('active', '#94a3b8')])
-        style.configure('Primary.TButton', font=('Microsoft YaHei UI', 10, 'bold'), padding=(20, 7))
-        style.configure('Small.TButton', font=('Microsoft YaHei UI', 8), padding=(8, 3))
-
-        # LabelFrame
-        style.configure('TLabelframe', background=BG, bordercolor=BORDER, relief='solid', borderwidth=1)
-        style.configure('TLabelframe.Label', background=BG, foreground=TEXT_SEC, font=('Microsoft YaHei UI', 9))
+        style.configure('TButton', font=('Segoe UI', 9), padding=(14, 6),
+                         relief='flat', borderwidth=0, background=BG)
+        style.map('TButton', background=[('active', '#f0f0f0'), ('!disabled', CARD_BG)],
+                  foreground=[('disabled', '#c7c7c7')])
+        style.configure('Small.TButton', font=('Segoe UI', 9), padding=(10, 4))
 
         # Checkbutton
-        style.configure('TCheckbutton', background=BG, foreground=TEXT_SEC)
+        style.configure('TCheckbutton', background=BG, foreground=TEXT)
         style.map('TCheckbutton', background=[('active', BG)])
 
         # Progressbar
-        style.configure('TProgressbar', thickness=6, background=ACCENT, troughcolor='#e2e8f0',
+        style.configure('TProgressbar', thickness=4, background=ACCENT, troughcolor='#efefef',
                          borderwidth=0, relief='flat')
 
         # === Main container ===
-        main = ttk.Frame(root, padding=(20, 16))
+        main = ttk.Frame(root, padding=(24, 20))
         main.pack(fill=tk.BOTH, expand=True)
 
-        # === Title row ===
+        # === Title ===
         title_row = ttk.Frame(main)
-        title_row.pack(fill=tk.X, pady=(0, 12))
-
+        title_row.pack(fill=tk.X, pady=(0, 16))
         ttk.Label(title_row, text="小红书笔记 → PDF", style='Title.TLabel').pack(side=tk.LEFT)
 
-        self.cookie_status = tk.Label(title_row, text="● Cookie: 未设置",
-                                       font=("Microsoft YaHei UI", 9), fg=WARNING, bg=BG)
-        self.cookie_status.pack(side=tk.RIGHT, padx=(0, 8))
+        # Status pills
+        status_row = ttk.Frame(main)
+        status_row.pack(fill=tk.X, pady=(0, 12))
 
-        self.env_btn = tk.Button(title_row, text="● 环境检测",
-                                  font=("Microsoft YaHei UI", 9), fg=WARNING, bg=BG,
-                                  relief=tk.FLAT, bd=0, padx=4, cursor="hand2",
-                                  command=self.check_env, activebackground='#e2e8f0')
-        self.env_btn.pack(side=tk.RIGHT, padx=(0, 6))
+        self.env_btn = tk.Label(status_row, text="● 环境检测",
+                                 font=("Segoe UI", 8), fg=WARNING, bg=BG, cursor="hand2")
+        self.env_btn.pack(side=tk.LEFT, padx=(0, 12))
+        self.env_btn.bind("<Button-1>", lambda e: self.check_env())
 
-        ttk.Button(title_row, text="?", width=3, style='Small.TButton',
+        self.cookie_status = tk.Label(status_row, text="● Cookie: 未设置",
+                                       font=("Segoe UI", 8), fg=WARNING, bg=BG)
+        self.cookie_status.pack(side=tk.LEFT)
+
+        ttk.Button(status_row, text="?", width=2, style='Small.TButton',
                    command=self.show_cookie_help).pack(side=tk.RIGHT)
 
-        # === URL input card ===
+        # === URL card ===
         url_card = tk.Frame(main, bg=CARD_BG, highlightthickness=1, highlightbackground=BORDER)
-        url_card.pack(fill=tk.X, pady=(0, 10))
+        url_card.pack(fill=tk.X, pady=(0, 12))
 
-        url_inner = tk.Frame(url_card, bg=CARD_BG, padx=12, pady=10)
+        url_inner = tk.Frame(url_card, bg=CARD_BG, padx=16, pady=14)
         url_inner.pack(fill=tk.X)
 
-        tk.Label(url_inner, text="粘贴小红书链接或分享文本", font=("Microsoft YaHei UI", 10, "bold"),
-                 bg=CARD_BG, fg=TEXT).pack(anchor=tk.W)
-        tk.Label(url_inner, text="自动识别短链接和完整链接", font=("Microsoft YaHei UI", 8),
-                 bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(0, 6))
+        tk.Label(url_inner, text="粘贴链接或分享文本，自动识别", font=("Segoe UI", 9),
+                 bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(0, 8))
 
-        self.url_entry = tk.Text(url_inner, height=3, font=("Microsoft YaHei UI", 10), wrap=tk.WORD,
-                                  relief=tk.FLAT, borderwidth=1, padx=8, pady=6,
-                                  bg='#f8fafc', fg=TEXT, insertbackground=TEXT,
-                                  highlightthickness=1, highlightbackground='#cbd5e1',
-                                  highlightcolor=ACCENT)
+        self.url_entry = tk.Text(url_inner, height=3, font=("Segoe UI", 10), wrap=tk.WORD,
+                                  relief=tk.FLAT, borderwidth=0, padx=0, pady=0,
+                                  bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
         self.url_entry.pack(fill=tk.X)
 
         # === Options row ===
         opt_frame = ttk.Frame(main)
-        opt_frame.pack(fill=tk.X, pady=(0, 6))
+        opt_frame.pack(fill=tk.X, pady=(0, 8))
 
         self.watermark_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(opt_frame, text="去除水印", variable=self.watermark_var).pack(side=tk.LEFT)
 
         self.show_cookie_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(opt_frame, text="Cookie设置", variable=self.show_cookie_var,
-                         command=self._toggle_cookie_panel).pack(side=tk.LEFT, padx=(16, 0))
+        ttk.Checkbutton(opt_frame, text="Cookie", variable=self.show_cookie_var,
+                         command=self._toggle_cookie_panel).pack(side=tk.LEFT, padx=(12, 0))
 
-        # Output dir
-        ttk.Label(opt_frame, text="输出:", style='Hint.TLabel').pack(side=tk.LEFT, padx=(16, 2))
+        ttk.Label(opt_frame, text="输出", style='Hint.TLabel').pack(side=tk.LEFT, padx=(12, 4))
         self.out_dir_var = tk.StringVar(value=SCRIPT_DIR)
         self.out_dir_label = tk.Label(opt_frame, text=self._short_path(SCRIPT_DIR),
-                                       font=("Microsoft YaHei UI", 8), fg=TEXT_SEC, bg=BG,
+                                       font=("Segoe UI", 8), fg=TEXT_SEC, bg=BG,
                                        anchor=tk.W, cursor="hand2")
         self.out_dir_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.out_dir_label.bind("<Button-1>", lambda e: self._choose_out_dir())
-        ttk.Button(opt_frame, text="···", width=3, style='Small.TButton',
-                   command=self._choose_out_dir).pack(side=tk.RIGHT)
 
         # === Cookie panel ===
         self.cookie_frame = tk.Frame(main, bg=CARD_BG, highlightthickness=1, highlightbackground=BORDER)
-
-        ck_inner = tk.Frame(self.cookie_frame, bg=CARD_BG, padx=12, pady=10)
+        ck_inner = tk.Frame(self.cookie_frame, bg=CARD_BG, padx=16, pady=14)
         ck_inner.pack(fill=tk.X)
 
-        tk.Label(ck_inner, text="Cookie 设置", font=("Microsoft YaHei UI", 10, "bold"),
+        tk.Label(ck_inner, text="Cookie 设置", font=("Segoe UI", 10, "bold"),
                  bg=CARD_BG, fg=TEXT).pack(anchor=tk.W)
-        tk.Label(ck_inner, text="从浏览器 F12 → Application → Cookies 复制后粘贴到下方",
-                 font=("Microsoft YaHei UI", 8), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(2, 6))
+        tk.Label(ck_inner, text="浏览器 F12 → Application → Cookies → 全选复制",
+                 font=("Segoe UI", 8), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(4, 8))
 
-        self.cookie_text = tk.Text(ck_inner, height=3, font=("Consolas", 8), wrap=tk.WORD,
-                                    relief=tk.FLAT, borderwidth=1, padx=8, pady=4,
-                                    bg='#f8fafc', fg=TEXT,
-                                    highlightthickness=1, highlightbackground='#cbd5e1')
-        self.cookie_text.pack(fill=tk.X, pady=(0, 6))
+        self.cookie_text = tk.Text(ck_inner, height=2, font=("Consolas", 8), wrap=tk.WORD,
+                                    relief=tk.FLAT, borderwidth=0, padx=0, pady=0,
+                                    bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
+        self.cookie_text.pack(fill=tk.X, pady=(0, 10))
 
         ck_btn_row = tk.Frame(ck_inner, bg=CARD_BG)
         ck_btn_row.pack(fill=tk.X)
-        ttk.Button(ck_btn_row, text="保存", command=self._save_cookie, style='Small.TButton').pack(side=tk.LEFT, padx=(0, 6))
-        ttk.Button(ck_btn_row, text="测试", command=self._test_cookie, style='Small.TButton').pack(side=tk.LEFT, padx=(0, 6))
-        ttk.Button(ck_btn_row, text="打开登录页", command=lambda: webbrowser.open('https://www.xiaohongshu.com'),
-                   style='Small.TButton').pack(side=tk.LEFT)
+        ttk.Button(ck_btn_row, text="保存", command=self._save_cookie).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(ck_btn_row, text="测试", command=self._test_cookie).pack(side=tk.LEFT, padx=(0, 6))
+        ttk.Button(ck_btn_row, text="登录小红书", command=lambda: webbrowser.open('https://www.xiaohongshu.com')).pack(side=tk.LEFT)
 
         # === Action buttons ===
         btn_frame = ttk.Frame(main)
-        btn_frame.pack(fill=tk.X, pady=(10, 6))
+        btn_frame.pack(fill=tk.X, pady=(12, 10))
 
         self.convert_btn = tk.Button(btn_frame, text="开始转换",
-                                      font=("Microsoft YaHei UI", 12, "bold"),
-                                      fg='#ffffff', bg=ACCENT, activebackground=ACCENT_HOVER,
-                                      activeforeground='#ffffff',
-                                      relief=tk.FLAT, bd=0, padx=28, pady=8, cursor="hand2",
+                                      font=("Segoe UI", 11, "bold"),
+                                      fg='#ffffff', bg=ACCENT,
+                                      activebackground=ACCENT_HOVER, activeforeground='#ffffff',
+                                      relief=tk.FLAT, bd=0, padx=32, pady=10, cursor="hand2",
                                       command=self.start_convert)
         self.convert_btn.pack(side=tk.LEFT, padx=(0, 8))
 
         self.open_btn = ttk.Button(btn_frame, text="打开PDF", command=self.open_pdf, state=tk.DISABLED)
         self.open_btn.pack(side=tk.LEFT, padx=(0, 6))
 
-        self.open_dir_btn = ttk.Button(btn_frame, text="打开目录", command=self.open_dir, state=tk.DISABLED)
+        self.open_dir_btn = ttk.Button(btn_frame, text="目录", command=self.open_dir, state=tk.DISABLED)
         self.open_dir_btn.pack(side=tk.LEFT)
 
-        # === Progress bar ===
+        # === Progress ===
         prog_frame = ttk.Frame(main)
         self.progress = ttk.Progressbar(prog_frame, mode='determinate', maximum=100)
-        self.progress.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 8))
-        self.progress_label = ttk.Label(prog_frame, text="", width=8, style='Small.TLabel')
-        self.progress_label.pack(side=tk.RIGHT)
+        self.progress.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.progress_label = ttk.Label(prog_frame, text="", width=6, style='Hint.TLabel')
+        self.progress_label.pack(side=tk.RIGHT, padx=(8, 0))
 
-        # === Status log (dark theme) ===
-        log_frame = tk.Frame(main, bg=LOG_BG, highlightthickness=1, highlightbackground=BORDER)
-        log_frame.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
+        # === Log area ===
+        log_frame = tk.Frame(main, bg=CARD_BG, highlightthickness=1, highlightbackground=BORDER)
+        log_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
 
-        log_header = tk.Frame(log_frame, bg=LOG_BG)
-        log_header.pack(fill=tk.X, padx=12, pady=(8, 4))
-        tk.Label(log_header, text="状态", font=("Microsoft YaHei UI", 9, "bold"),
-                 bg=LOG_BG, fg=LOG_FG).pack(side=tk.LEFT)
+        log_header = tk.Frame(log_frame, bg=CARD_BG)
+        log_header.pack(fill=tk.X, padx=16, pady=(12, 6))
+        tk.Label(log_header, text="状态", font=("Segoe UI", 9, "bold"),
+                 bg=CARD_BG, fg=TEXT).pack(side=tk.LEFT)
 
-        self.log_text = tk.Text(log_frame, height=5, font=("Consolas", 10), wrap=tk.WORD,
-                                 relief=tk.FLAT, borderwidth=0, padx=12, pady=4,
-                                 bg=LOG_BG, fg=LOG_FG, insertbackground=LOG_FG,
-                                 selectbackground='#334155')
-        self.log_text.pack(fill=tk.BOTH, expand=True)
+        self.log_text = tk.Text(log_frame, height=5, font=("Consolas", 9), wrap=tk.WORD,
+                                 relief=tk.FLAT, borderwidth=0,
+                                 bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
+        self.log_text.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 10))
         self.log_text.config(state=tk.DISABLED)
 
         # === Result ===
-        self.result_label = tk.Label(main, text="", font=("Microsoft YaHei UI", 10, "bold"),
-                                      bg=BG, fg=SUCCESS)
-        self.result_label.pack(pady=(8, 0))
+        self.result_label = tk.Label(main, text="", font=("Segoe UI", 10, "bold"),
+                                      bg=BG, fg=TEXT)
+        self.result_label.pack(pady=(10, 0))
 
         self.output_path = ""
 
@@ -273,13 +262,12 @@ class App:
         return "..." + path[-47:]
 
     def _set_cookie_color(self, color: str, text: str):
-        """color: 'green', 'yellow', 'red'"""
-        colors = {'green': '#16a34a', 'yellow': '#d97706', 'red': '#dc2626'}
-        self.cookie_status.config(text=text, fg=colors.get(color, '#d97706'))
+        colors = {'green': '#58b942', 'yellow': '#d9920b', 'red': '#ed4956'}
+        self.cookie_status.config(text=text, fg=colors.get(color, '#d9920b'))
 
     def _set_env_btn_color(self, color: str, text: str):
-        colors = {'green': '#16a34a', 'yellow': '#d97706', 'red': '#dc2626'}
-        self.env_btn.config(text=text, fg=colors.get(color, '#d97706'))
+        colors = {'green': '#58b942', 'yellow': '#d9920b', 'red': '#ed4956'}
+        self.env_btn.config(text=text, fg=colors.get(color, '#d9920b'))
 
     def _refresh_cookie_status(self):
         cookie = load_cookie()
@@ -465,13 +453,13 @@ class App:
         frame.pack(fill=tk.BOTH, expand=True)
 
         def title(text):
-            ttk.Label(frame, text=text, font=("Microsoft YaHei UI", 12, "bold")).pack(anchor=tk.W, pady=(12, 4))
+            ttk.Label(frame, text=text, font=("Segoe UI", 12, "bold")).pack(anchor=tk.W, pady=(12, 4))
 
         def body(text):
-            ttk.Label(frame, text=text, font=("Microsoft YaHei UI", 9), wraplength=470).pack(anchor=tk.W, padx=(8, 0))
+            ttk.Label(frame, text=text, font=("Segoe UI", 9), wraplength=470).pack(anchor=tk.W, padx=(8, 0))
 
         def step(num, text):
-            ttk.Label(frame, text=f"  {num}. {text}", font=("Microsoft YaHei UI", 9), wraplength=460).pack(anchor=tk.W, padx=(8, 0))
+            ttk.Label(frame, text=f"  {num}. {text}", font=("Segoe UI", 9), wraplength=460).pack(anchor=tk.W, padx=(8, 0))
 
         # === Section 0: Environment ===
         title("零、环境配置（首次使用必读）")
@@ -630,7 +618,7 @@ class App:
         def update():
             self.progress['value'] = 100
             self.progress_label.config(text="完成")
-            self.result_label.config(text="转换成功！", fg="#2e7d32")
+            self.result_label.config(text="转换成功！", fg="#58b942")
             self.open_btn.config(state=tk.NORMAL)
             self.open_dir_btn.config(state=tk.NORMAL)
             self.convert_btn.config(state=tk.NORMAL)
@@ -640,7 +628,7 @@ class App:
         def update():
             self.progress_label.config(text="失败")
             short_msg = err_msg[:100] + ("..." if len(err_msg) > 100 else "")
-            self.result_label.config(text=short_msg, fg="#c62828")
+            self.result_label.config(text=short_msg, fg="#ed4956")
             self.convert_btn.config(state=tk.NORMAL)
         self.root.after(0, update)
 
