@@ -1,0 +1,5 @@
+cookie.txt
+__pycache__/
+*.pyc
+*.pdf
+debug_*
