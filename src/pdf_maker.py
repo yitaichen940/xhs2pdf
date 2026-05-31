@@ -34,6 +34,10 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
             text = item.data.strip()
             if not text:
                 continue
+            # Remove unsupported characters (emojis, special Unicode)
+            text = text.encode('gbk', errors='ignore').decode('gbk')
+            if not text.strip():
+                continue
             # Clean: normalize newlines, remove excessive space per line
             text = re.sub(r'[ \t]+', ' ', text)    # collapse horizontal whitespace
             text = re.sub(r'\n{3,}', '\n\n', text)  # max 2 consecutive newlines
@@ -43,12 +47,16 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
                 if not para:
                     pdf.ln(4)
                     continue
+                pdf.set_x(pdf.l_margin)  # ensure we're at left margin
                 try:
                     pdf.multi_cell(0, 7, para)
                 except RuntimeError:
-                    # Fallback: smaller font for oversized content
                     pdf.set_font('zh', '', 8)
-                    pdf.multi_cell(0, 5, para)
+                    pdf.set_x(pdf.l_margin)
+                    try:
+                        pdf.multi_cell(0, 5, para)
+                    except RuntimeError:
+                        pass
                     pdf.set_font('zh', '', 11)
             pdf.ln(2)
 
@@ -63,8 +71,9 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
                     img.save(tmp, 'JPEG', quality=90)
                     local_path = tmp
 
-                # Fit image to page width
-                pdf.image(local_path, x=10, w=pdf.w - 20)
+                # Fit image within content area
+                content_w = pdf.w - pdf.l_margin - pdf.r_margin
+                pdf.image(local_path, x=pdf.l_margin, w=content_w)
                 pdf.ln(4)
 
                 if remove_watermark:
