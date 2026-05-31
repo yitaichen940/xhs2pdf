@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-小红书笔记图片 → PDF 转换工具
+图文笔记 → PDF 转换工具
 
 用法:
     python main.py "https://www.xiaohongshu.com/explore/xxxxx"

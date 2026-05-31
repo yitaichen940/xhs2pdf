@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""小红书笔记图片 → PDF 转换工具 """
+"""图文笔记 → PDF | 小红书·知乎·微信公众号"""
 
 import os
 import sys
@@ -81,7 +81,7 @@ def test_cookie_web(cookie: str, test_url: str) -> bool:
 class App:
     def __init__(self, root):
         self.root = root
-        self.root.title("小红书笔记 → PDF")
+        self.root.title("图文笔记 → PDF")
         self.root.geometry("720x1000")
         self.root.resizable(True, True)
         self.root.minsize(640,720)
@@ -131,7 +131,7 @@ class App:
         # === Title ===
         title_row = ttk.Frame(main)
         title_row.pack(fill=tk.X, pady=(0, 15))
-        ttk.Label(title_row, text="小红书笔记 → PDF", style='Title.TLabel').pack(side=tk.LEFT)
+        ttk.Label(title_row, text="图文笔记 → PDF", style='Title.TLabel').pack(side=tk.LEFT)
 
         # Status pills
         status_row = ttk.Frame(main)
