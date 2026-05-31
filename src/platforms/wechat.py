@@ -5,9 +5,13 @@ from bs4 import BeautifulSoup
 from src.platforms.base import BasePlatform, ContentItem, NoteResult, CookieExpiredError
 
 HEADERS = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
     'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+    'Sec-Ch-Ua': '\"Google Chrome\";v=\"131\"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '\"Windows\"',
+    'Cache-Control': 'no-cache',
 }
 
 
@@ -35,6 +39,8 @@ class WechatPlatform(BasePlatform):
         # Content
         content = soup.find('div', id='js_content') or soup.find('div', class_='rich_media_content')
         if not content:
+            if len(html) < 50000:
+                raise CookieExpiredError("微信页面加载不完整，请稍后重试")
             raise CookieExpiredError("未找到文章内容，链接可能已失效")
 
         items = self._parse_content(content)

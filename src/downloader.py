@@ -12,8 +12,8 @@ REFERER_MAP = {
     'xhscdn.com': 'https://www.xiaohongshu.com/',
     'xiaohongshu.com': 'https://www.xiaohongshu.com/',
     'zhimg.com': 'https://www.zhihu.com/',
-    'qpic.cn': 'https://mp.weixin.qq.com/',
-    'mmbiz.qpic.cn': 'https://mp.weixin.qq.com/',
+    'mmbiz.qpic.cn': 'https://mp.weixin.qq.com/s/',
+    'mmbiz.qlogo.cn': 'https://mp.weixin.qq.com/s/',
 }
 
 
@@ -33,6 +33,7 @@ def download_images(
     dest_dir: str,
     max_retries: int = 3,
     progress_callback: Optional[Callable[[int, int], None]] = None,
+    referer: str = "",
 ) -> list[str]:
     """Download images sequentially. Calls progress_callback(current, total) after each."""
     os.makedirs(dest_dir, exist_ok=True)
@@ -44,7 +45,7 @@ def download_images(
         filename = f"{i:03d}{ext}"
         filepath = os.path.join(dest_dir, filename)
 
-        success = _download_with_retry(url, filepath, max_retries)
+        success = _download_with_retry(url, filepath, max_retries, referer)
         if success:
             saved.append(filepath)
         else:
@@ -66,10 +67,13 @@ def _guess_ext(url: str) -> str:
     return '.jpg'
 
 
-def _download_with_retry(url: str, filepath: str, max_retries: int) -> bool:
+def _download_with_retry(url: str, filepath: str, max_retries: int, referer: str = "") -> bool:
     for attempt in range(max_retries):
         try:
-            resp = requests.get(url, headers=_headers_for_url(url), timeout=30)
+            h = _headers_for_url(url)
+            if referer:
+                h['Referer'] = referer
+            resp = requests.get(url, headers=h, timeout=30)
             resp.raise_for_status()
             with open(filepath, 'wb') as f:
                 f.write(resp.content)
