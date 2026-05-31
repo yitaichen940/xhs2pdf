@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 *.pdf
 debug_*
+启动错误.log

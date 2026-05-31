@@ -90,9 +90,14 @@ class App:
 
         ttk.Label(title_row, text="小红书笔记 → PDF", font=("Microsoft YaHei UI", 14, "bold")).pack(side=tk.LEFT)
         ttk.Button(title_row, text="?", width=3, command=self.show_cookie_help).pack(side=tk.RIGHT)
-        ttk.Button(title_row, text="环境检测", command=self.check_env).pack(side=tk.RIGHT, padx=(0, 4))
 
-        self.cookie_status = ttk.Label(title_row, text="", font=("Microsoft YaHei UI", 9))
+        self.env_btn = tk.Button(title_row, text="● 环境检测", font=("Microsoft YaHei UI", 9),
+                                  fg="#f0a030", bg="#f0f0f0", relief=tk.FLAT, bd=0, padx=6, cursor="hand2",
+                                  command=self.check_env, activebackground="#e0e0e0")
+        self.env_btn.pack(side=tk.RIGHT, padx=(0, 4))
+
+        self.cookie_status = tk.Label(title_row, text="● Cookie: 未设置", font=("Microsoft YaHei UI", 9),
+                                       fg="#f0a030", bg="#f0f0f0")
         self.cookie_status.pack(side=tk.RIGHT, padx=(0, 8))
 
         # === URL input ===
@@ -181,12 +186,21 @@ class App:
         # Auto-check environment after window opens
         self.root.after(500, self._auto_check_env)
 
+    def _set_cookie_color(self, color: str, text: str):
+        """color: 'green', 'yellow', 'red'"""
+        colors = {'green': '#2e7d32', 'yellow': '#f0a030', 'red': '#c62828'}
+        self.cookie_status.config(text=text, fg=colors.get(color, '#f0a030'))
+
+    def _set_env_btn_color(self, color: str, text: str):
+        colors = {'green': '#2e7d32', 'yellow': '#f0a030', 'red': '#c62828'}
+        self.env_btn.config(text=text, fg=colors.get(color, '#f0a030'))
+
     def _refresh_cookie_status(self):
         cookie = load_cookie()
         if cookie:
-            self.cookie_status.config(text="Cookie: 已加载", foreground="#2e7d32")
+            self._set_cookie_color('green', '● Cookie: 已加载')
         else:
-            self.cookie_status.config(text="Cookie: 未设置", foreground="#e65100")
+            self._set_cookie_color('yellow', '● Cookie: 未设置')
 
     def _toggle_cookie_panel(self):
         if self.show_cookie_var.get():
@@ -226,8 +240,10 @@ class App:
         self.log("[Cookie测试] 验证中...")
         ok = test_cookie(cookie)
         if ok:
+            self._set_cookie_color('green', '● Cookie: 有效')
             self.log("[Cookie测试] Cookie 有效")
         else:
+            self._set_cookie_color('red', '● Cookie: 无效')
             self.log("[Cookie测试] Cookie 无效或已过期，请重新获取")
 
     def log(self, msg: str):
@@ -254,6 +270,7 @@ class App:
                 total_mb += size_mb
 
         if not missing:
+            self._set_env_btn_color('green', '● 环境检测 ✓')
             return  # All OK, silent
 
         lines = '\n'.join(f'  - {pkg}  (~{size:.1f} MB)' for pkg, size in missing)
@@ -272,6 +289,17 @@ class App:
                     self.log(f"  {pkg} 安装成功")
                 else:
                     self.log(f"  {pkg} 安装失败: {result.stderr.strip()}")
+            all_ok = True
+            for pkg, _ in missing:
+                try:
+                    mod = {'requests': 'requests', 'Pillow': 'PIL', 'tqdm': 'tqdm', 'beautifulsoup4': 'bs4'}[pkg]
+                    __import__(mod)
+                except ImportError:
+                    all_ok = False
+            if all_ok:
+                self._set_env_btn_color('green', '● 环境检测 ✓')
+            else:
+                self._set_env_btn_color('red', '● 环境检测 ✗')
             self.log("[环境检测] 完成，请重新启动程序以确保依赖生效")
 
     def check_env(self):
@@ -292,9 +320,11 @@ class App:
                 total_mb += size_mb
 
         if not missing:
+            self._set_env_btn_color('green', '● 环境检测 ✓')
             self.log("[环境检测] 所有依赖已满足，无需安装")
             return
 
+        self._set_env_btn_color('red', '● 环境检测 ✗')
         self.log(f"[环境检测] 缺少以下包: {', '.join(m[0] for m in missing)} (共约 {total_mb:.1f} MB)")
         lines = '\n'.join(f'  - {pkg}  (~{size:.1f} MB)' for pkg, size in missing)
         msg = f"检测到缺少以下 Python 包:\n\n{lines}\n\n总计需下载约 {total_mb:.1f} MB\n\n是否立即安装？"
@@ -311,6 +341,15 @@ class App:
                     self.log(f"  {pkg} 安装成功")
                 else:
                     self.log(f"  {pkg} 安装失败: {result.stderr.strip()}")
+            all_ok = True
+            for pkg, _ in missing:
+                try:
+                    mod = {'requests': 'requests', 'Pillow': 'PIL', 'tqdm': 'tqdm', 'beautifulsoup4': 'bs4'}[pkg]
+                    __import__(mod)
+                except ImportError:
+                    all_ok = False
+            if all_ok:
+                self._set_env_btn_color('green', '● 环境检测 ✓')
             self.log("[环境检测] 完成")
 
     def show_cookie_help(self):
@@ -439,6 +478,7 @@ class App:
         thread.start()
 
     def _do_convert(self, url: str, remove_wm: bool):
+        temp_dir = None
         try:
             cookie = load_cookie()
 
@@ -476,14 +516,12 @@ class App:
             self.output_path = output_path
             self._set_progress(95)
 
-            self._log_thread("[5/5] 清理临时文件...")
-            shutil.rmtree(temp_dir, ignore_errors=True)
             self._set_progress(100)
-
             self._log_thread(f"\n完成! PDF已保存到:\n  {output_path}")
             self._result_success(output_path)
 
         except CookieExpiredError as e:
+            self._set_cookie_color('red', '● Cookie: 已过期')
             self._log_thread(f"\nCookie 已过期或无效！")
             self._log_thread(f"请勾选\"显示Cookie设置\"，重新粘贴有效的Cookie并保存。")
             self._result_fail("Cookie 已过期/无效，请更新Cookie")
@@ -491,6 +529,10 @@ class App:
         except Exception as e:
             self._log_thread(f"\n失败: {e}")
             self._result_fail(str(e))
+
+        finally:
+            if temp_dir and os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir, ignore_errors=True)
 
     def _set_progress(self, value: int):
         def update():
