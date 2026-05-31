@@ -29,12 +29,20 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
     for item in items:
         if item.type == 'text':
             pdf.set_font('zh', '', 11)
-            # Clean text
-            text = item.data
-            text = re.sub(r'\s+', ' ', text).strip()
-            if text:
-                pdf.multi_cell(0, 7, text)
-                pdf.ln(2)
+            text = item.data.strip()
+            if not text:
+                continue
+            # Clean: normalize newlines, remove excessive space per line
+            text = re.sub(r'[ \t]+', ' ', text)    # collapse horizontal whitespace
+            text = re.sub(r'\n{3,}', '\n\n', text)  # max 2 consecutive newlines
+            # Split into paragraphs
+            for para in text.split('\n'):
+                para = para.strip()
+                if para:
+                    pdf.multi_cell(0, 7, para)
+                else:
+                    pdf.ln(4)  # blank line between paragraphs
+            pdf.ln(2)
 
         elif item.type == 'image':
             local_path = image_path_map.get(item.data, '')
