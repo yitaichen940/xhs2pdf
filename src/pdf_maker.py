@@ -56,6 +56,12 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
             except Exception as e:
                 print(f"  [警告] 图片嵌入失败: {e}")
 
+    # Remove existing file to avoid permission issues
+    if os.path.exists(output_path):
+        try:
+            os.remove(output_path)
+        except Exception:
+            pass
     pdf.output(output_path)
     print(f"  PDF已生成: {output_path}")
 
