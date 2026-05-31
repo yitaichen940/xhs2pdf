@@ -21,15 +21,12 @@ if sys.platform == 'win32':
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from src.fetcher import (
-    resolve_note_url, parse_note_id, fetch_note_html,
-    extract_note_data, extract_note_info, CookieExpiredError,
-)
+from src.platforms import detect_platform, PLATFORMS
+from src.platforms.base import UnsupportedError, CookieExpiredError
 from src.downloader import download_images
-from src.pdf_maker import images_to_pdf
+from src.pdf_maker import content_to_pdf, images_to_pdf
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-COOKIE_FILE = os.path.join(ROOT_DIR, 'cookie.txt')
 DEFAULT_OUT_DIR = os.path.join(ROOT_DIR, 'output')
 
 
@@ -45,36 +42,35 @@ def extract_url(text: str) -> str:
     return ""
 
 
-def load_cookie() -> str:
-    env_cookie = os.environ.get('XHS_COOKIE', '')
-    if env_cookie:
-        return env_cookie
-    if os.path.exists(COOKIE_FILE):
-        with open(COOKIE_FILE, 'r', encoding='utf-8') as f:
+def load_cookie(cookie_file: str) -> str:
+    if not cookie_file:
+        return ""
+    path = os.path.join(ROOT_DIR, cookie_file)
+    if os.path.exists(path):
+        with open(path, 'r', encoding='utf-8') as f:
             return f.read().strip()
     return ""
 
 
-def save_cookie(value: str):
-    with open(COOKIE_FILE, 'w', encoding='utf-8') as f:
+def save_cookie(value: str, cookie_file: str):
+    if not cookie_file:
+        return
+    path = os.path.join(ROOT_DIR, cookie_file)
+    with open(path, 'w', encoding='utf-8') as f:
         f.write(value.strip())
 
 
-def test_cookie(cookie: str) -> bool:
-    """Test cookie by calling user/me API. Only valid if actually logged in."""
-    if not cookie or len(cookie) < 50:
+def test_cookie_web(cookie: str, test_url: str) -> bool:
+    """Test cookie against a platform-specific URL."""
+    if not cookie or len(cookie) < 20:
         return False
     try:
         import requests
-        resp = requests.get('https://edith.xiaohongshu.com/api/sns/web/v2/user/me', headers={
+        resp = requests.get(test_url, headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Cookie': cookie,
-            'Referer': 'https://www.xiaohongshu.com/',
-        }, timeout=8)
-        if resp.status_code != 200:
-            return False
-        data = resp.json()
-        return data.get('success') and not data.get('data', {}).get('guest', True)
+        }, timeout=8, allow_redirects=True)
+        return resp.status_code == 200 and len(resp.text) > 500
     except Exception:
         return False
 
@@ -194,8 +190,9 @@ class App:
         # Section header
         tk.Label(ck_inner, text="Cookie 设置", font=("Microsoft YaHei UI", 10, "bold"),
                  bg=CARD_BG, fg=TEXT).pack(anchor=tk.W)
-        tk.Label(ck_inner, text="浏览器 F12 → Application → Cookies → 全选复制后粘贴到下方",
-                 font=("Microsoft YaHei UI", 8), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(0, 0))
+        self.cookie_help_label = tk.Label(ck_inner, text="请先在输入框中粘贴链接以识别平台",
+                 font=("Microsoft YaHei UI", 8), bg=CARD_BG, fg=TEXT_SEC)
+        self.cookie_help_label.pack(anchor=tk.W, pady=(2, 0))
 
         # Content area with subtle border
         ck_content = tk.Frame(ck_inner, bg='#f8f8f8', highlightthickness=1, highlightbackground='#e0e0e0')
@@ -270,6 +267,7 @@ class App:
         self.result_label.pack(pady=(10, 0))
 
         self.output_path = ""
+        self.current_platform = None
 
         # Init
         self._refresh_cookie_status()
@@ -320,31 +318,62 @@ class App:
         colors = {'green': '#58b942', 'yellow': '#d9920b', 'red': '#ed4956'}
         self.env_btn.config(text=text, fg=colors.get(color, '#d9920b'))
 
+    def _platform_cookie_file(self) -> str:
+        if self.current_platform:
+            return self.current_platform.cookie_file
+        return ""
+
+    def _platform_cookie_help(self) -> str:
+        if self.current_platform:
+            return self.current_platform.cookie_help()
+        return ""
+
     def _refresh_cookie_status(self):
-        cookie = load_cookie()
-        if cookie:
-            self._set_cookie_color('green', '● Cookie: 已加载')
+        cf = self._platform_cookie_file()
+        if cf and load_cookie(cf):
+            self._set_cookie_color('green', f'● Cookie: {self.current_platform.name}已加载')
+        elif cf:
+            self._set_cookie_color('yellow', f'● Cookie: {self.current_platform.name}未设置')
         else:
-            self._set_cookie_color('yellow', '● Cookie: 未设置')
+            self._set_cookie_color('yellow', '● Cookie: 无需设置')
 
     def _toggle_cookie_panel(self):
         if self.show_cookie_var.get():
             self.cookie_frame.pack(fill=tk.X, pady=(0, 8), before=self.convert_btn.master)
-            current = load_cookie()
+            cf = self._platform_cookie_file()
+            current = load_cookie(cf) if cf else ""
             self.cookie_text.delete('1.0', tk.END)
             if current:
                 self.cookie_text.insert('1.0', current)
+            # Update cookie panel label
+            if self.current_platform:
+                self._update_cookie_help_label()
         else:
             self.cookie_frame.pack_forget()
 
+    def _update_cookie_help_label(self):
+        if self.current_platform:
+            help_text = self.current_platform.cookie_help()
+            if hasattr(self, 'cookie_help_label'):
+                self.cookie_help_label.config(text=help_text)
+            # If no cookie needed, disable text input
+            if not self.current_platform.cookie_file:
+                self.cookie_text.config(state=tk.DISABLED, bg='#f0f0f0')
+            else:
+                self.cookie_text.config(state=tk.NORMAL, bg='#f8f8f8')
+
     def _save_cookie(self):
         cookie = self.cookie_text.get('1.0', 'end-1c').strip()
+        cf = self._platform_cookie_file()
+        if not cf:
+            self.log("[Cookie] 当前平台无需设置Cookie")
+            return
         if not cookie:
             self.log("[Cookie] 输入为空，未保存")
             return
-        save_cookie(cookie)
+        save_cookie(cookie, cf)
         self._refresh_cookie_status()
-        self.log("[Cookie] 已保存")
+        self.log(f"[Cookie] {self.current_platform.name}Cookie已保存")
 
     def _choose_out_dir(self):
         directory = filedialog.askdirectory(initialdir=self.out_dir_var.get(), title="选择PDF输出目录")
@@ -353,19 +382,33 @@ class App:
             self.out_dir_label.config(text=self._short_path(directory))
 
     def _test_cookie(self):
+        cf = self._platform_cookie_file()
+        if not cf:
+            self.log("[Cookie测试] 当前平台无需Cookie")
+            return
         cookie = self.cookie_text.get('1.0', 'end-1c').strip()
         if not cookie:
-            cookie = load_cookie()
+            cookie = load_cookie(cf)
         if not cookie:
             self.log("[Cookie测试] 没有可测试的Cookie，请先输入")
             return
         self.log("[Cookie测试] 验证中...")
-        ok = test_cookie(cookie)
+        # Use platform-specific test URL
+        test_url = f"https://www.{self.current_platform.name.replace(' ', '').lower()}.com"
+        # But for XHS use the user API
+        test_urls = {'小红书': 'https://edith.xiaohongshu.com/api/sns/web/v2/user/me',
+                      '知乎': 'https://www.zhihu.com',
+                      '微信公众号': None}
+        actual_url = test_urls.get(self.current_platform.name, test_url)
+        if actual_url is None:
+            self.log("[Cookie测试] 当前平台无需Cookie")
+            return
+        ok = test_cookie_web(cookie, actual_url)
         if ok:
-            self._set_cookie_color('green', '● Cookie: 有效')
+            self._set_cookie_color('green', f'● Cookie: {self.current_platform.name}有效')
             self.log("[Cookie测试] Cookie 有效")
         else:
-            self._set_cookie_color('red', '● Cookie: 无效')
+            self._set_cookie_color('red', f'● Cookie: {self.current_platform.name}无效')
             self.log("[Cookie测试] Cookie 无效或已过期，请重新获取")
 
     def log(self, msg: str):
@@ -381,6 +424,7 @@ class App:
             'PIL': ('Pillow', 15),
             'tqdm': ('tqdm', 0.3),
             'bs4': ('beautifulsoup4', 0.7),
+            'fpdf': ('fpdf2', 2),
         }
         missing = []
         total_mb = 0.0
@@ -431,6 +475,7 @@ class App:
             'PIL': ('Pillow', 15),
             'tqdm': ('tqdm', 0.3),
             'bs4': ('beautifulsoup4', 0.7),
+            'fpdf': ('fpdf2', 2),
         }
         missing = []
         total_mb = 0.0
@@ -581,17 +626,29 @@ class App:
 
         raw_text = self.url_entry.get('1.0', 'end-1c').strip()
         if not raw_text:
-            self.log("请输入小红书笔记链接")
+            self.log("请输入链接")
             self.convert_btn.config(state=tk.NORMAL)
             return
 
         url = extract_url(raw_text)
         if not url:
-            self.log("未识别到有效的小红书链接，请检查输入")
+            self.log("未识别到有效链接，请检查输入")
             self.convert_btn.config(state=tk.NORMAL)
             return
 
-        self.log(f"识别到链接:\n  {url}\n")
+        # Detect platform
+        try:
+            self.current_platform = detect_platform(url)
+            self.log(f"识别平台: {self.current_platform.name}")
+            self._refresh_cookie_status()
+            if self.show_cookie_var.get():
+                self._update_cookie_help_label()
+        except UnsupportedError as e:
+            self.log(f"暂不支持的链接: {e}")
+            self.convert_btn.config(state=tk.NORMAL)
+            return
+
+        self.log(f"链接:\n  {url}\n")
         self.progress.pack(fill=tk.X, pady=(0, 4))
         self.progress_label.pack()
 
@@ -602,42 +659,49 @@ class App:
     def _do_convert(self, url: str, remove_wm: bool):
         temp_dir = None
         try:
-            cookie = load_cookie()
+            platform = self.current_platform
+            cf = platform.cookie_file
+            cookie = load_cookie(cf) if cf else ""
 
-            self._log_thread("[1/5] 解析笔记链接...")
-            self._set_progress(5)
-            full_url = resolve_note_url(url)
-            note_id = parse_note_id(full_url)
-            self._log_thread(f"      笔记ID: {note_id}")
-
-            self._log_thread("[2/5] 获取笔记数据...")
-            self._set_progress(15)
-            html = fetch_note_html(full_url, cookie)
-            note_data = extract_note_data(html)
-            title, image_urls = extract_note_info(note_data, note_id)
-            self._log_thread(f"      标题: {title}")
-            self._log_thread(f"      图片数量: {len(image_urls)} 张")
+            self._log_thread("[1/4] 获取内容...")
+            self._set_progress(10)
+            result = platform.fetch(url, cookie)
+            self._log_thread(f"      标题: {result.title}")
+            self._log_thread(f"      内容项: {len(result.items)} 项")
             self._set_progress(30)
 
-            self._log_thread("[3/5] 下载图片中...")
-            temp_dir = tempfile.mkdtemp(prefix='xhs2pdf_')
+            # Collect image URLs and build path map
+            img_urls = [item.data for item in result.items if item.type == 'image']
+            img_path_map = {}
 
-            def progress_cb(current, total):
-                pct = 30 + int((current / total) * 50)
-                self._set_progress(pct)
-                self._log_thread(f"      下载中: {current}/{total}")
+            if img_urls:
+                self._log_thread("[2/4] 下载图片中...")
+                temp_dir = tempfile.mkdtemp(prefix='xhs2pdf_')
 
-            image_paths = download_images(image_urls, temp_dir, progress_callback=progress_cb)
+                def progress_cb(current, total):
+                    pct = 30 + int((current / total) * 40)
+                    self._set_progress(pct)
+                    self._log_thread(f"      下载中: {current}/{total}")
+
+                local_paths = download_images(img_urls, temp_dir, progress_callback=progress_cb)
+                for orig_url, local_path in zip(img_urls, local_paths):
+                    img_path_map[orig_url] = local_path
+                self._log_thread(f"      已下载: {len(local_paths)}/{len(img_urls)} 张")
+
+            self._log_thread("[3/4] 生成PDF...")
             self._set_progress(80)
-            self._log_thread(f"      已下载: {len(image_paths)}/{len(image_urls)} 张")
-
-            self._log_thread("[4/5] 生成PDF..." + (" (去水印)" if remove_wm else ""))
             out_dir = self.out_dir_var.get()
-            output_path = os.path.join(out_dir, f"{title}.pdf")
-            images_to_pdf(image_paths, output_path, remove_watermark=remove_wm)
-            self.output_path = output_path
-            self._set_progress(95)
+            output_path = os.path.join(out_dir, f"{result.title}.pdf")
 
+            if result.items and any(item.type == 'text' for item in result.items):
+                # Mixed text+image
+                content_to_pdf(result.items, img_path_map, result.title, output_path, remove_watermark=remove_wm)
+            else:
+                # Images only
+                images_to_pdf([img_path_map[u] for u in img_urls if u in img_path_map],
+                             output_path, remove_watermark=remove_wm)
+
+            self.output_path = output_path
             self._set_progress(100)
             self._log_thread(f"\n完成! PDF已保存到:\n  {output_path}")
             self._result_success(output_path)
@@ -647,6 +711,10 @@ class App:
             self._log_thread(f"\nCookie 已过期或无效！")
             self._log_thread(f"请勾选\"显示Cookie设置\"，重新粘贴有效的Cookie并保存。")
             self._result_fail("Cookie 已过期/无效，请更新Cookie")
+
+        except UnsupportedError as e:
+            self._log_thread(f"\n不支持: {e}")
+            self._result_fail(str(e))
 
         except Exception as e:
             self._log_thread(f"\n失败: {e}")

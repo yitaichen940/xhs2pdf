@@ -1,4 +1,4 @@
-cookie.txt
+cookie*.txt
 __pycache__/
 *.pyc
 *.pdf
