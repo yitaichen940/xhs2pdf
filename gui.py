@@ -60,19 +60,20 @@ def save_cookie(value: str):
 
 
 def test_cookie(cookie: str) -> bool:
-    """Quick test if cookie is valid by hitting the homepage."""
-    if not cookie or len(cookie) < 20:
+    """Test cookie by calling user/me API. Only valid if actually logged in."""
+    if not cookie or len(cookie) < 50:
         return False
     try:
         import requests
-        resp = requests.get('https://www.xiaohongshu.com', headers={
+        resp = requests.get('https://edith.xiaohongshu.com/api/sns/web/v2/user/me', headers={
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
             'Cookie': cookie,
-        }, timeout=8, allow_redirects=False)
-        # 302 redirect to /explore = logged in; 200 with login page = not logged in
-        if resp.status_code == 302:
-            return True
-        return resp.status_code == 200 and 'login-form' not in resp.text[:2000].lower()
+            'Referer': 'https://www.xiaohongshu.com/',
+        }, timeout=8)
+        if resp.status_code != 200:
+            return False
+        data = resp.json()
+        return data.get('success') and not data.get('data', {}).get('guest', True)
     except Exception:
         return False
 
@@ -81,9 +82,9 @@ class App:
     def __init__(self, root):
         self.root = root
         self.root.title("小红书笔记 → PDF")
-        self.root.geometry("640x620")
+        self.root.geometry("720x1000")
         self.root.resizable(True, True)
-        self.root.minsize(520, 520)
+        self.root.minsize(640,720)
         # === Instagram Style ===
         style = ttk.Style()
         style.theme_use('clam')
@@ -129,7 +130,7 @@ class App:
 
         # === Title ===
         title_row = ttk.Frame(main)
-        title_row.pack(fill=tk.X, pady=(0, 16))
+        title_row.pack(fill=tk.X, pady=(0, 15))
         ttk.Label(title_row, text="小红书笔记 → PDF", style='Title.TLabel').pack(side=tk.LEFT)
 
         # Status pills
@@ -190,16 +191,16 @@ class App:
         ck_inner.pack(fill=tk.X)
 
         # Section header
-        tk.Label(ck_inner, text="Cookie 设置", font=("Microsoft YaHei UI", 11, "bold"),
+        tk.Label(ck_inner, text="Cookie 设置", font=("Microsoft YaHei UI", 10, "bold"),
                  bg=CARD_BG, fg=TEXT).pack(anchor=tk.W)
         tk.Label(ck_inner, text="浏览器 F12 → Application → Cookies → 全选复制后粘贴到下方",
-                 font=("Microsoft YaHei UI", 9), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(2, 0))
+                 font=("Microsoft YaHei UI", 8), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(0, 0))
 
         # Content area with subtle border
         ck_content = tk.Frame(ck_inner, bg='#f8f8f8', highlightthickness=1, highlightbackground='#e0e0e0')
         ck_content.pack(fill=tk.X, pady=(8, 8), ipady=4)
 
-        self.cookie_text = tk.Text(ck_content, height=3, font=("Consolas", 8), wrap=tk.WORD,
+        self.cookie_text = tk.Text(ck_content, height=6, font=("Consolas", 8), wrap=tk.WORD,
                                     relief=tk.FLAT, borderwidth=0, padx=8, pady=6,
                                     bg='#f8f8f8', fg=TEXT, insertbackground=TEXT)
         self.cookie_text.pack(fill=tk.X)
@@ -253,10 +254,10 @@ class App:
 
         log_header = tk.Frame(log_frame, bg=CARD_BG)
         log_header.pack(fill=tk.X, padx=16, pady=(12, 6))
-        tk.Label(log_header, text="状态", font=("Microsoft YaHei UI", 10, "bold"),
+        tk.Label(log_header, text="状态", font=("Microsoft YaHei UI", 11, "bold"),
                  bg=CARD_BG, fg=TEXT).pack(side=tk.LEFT)
 
-        self.log_text = tk.Text(log_frame, height=5, font=("Consolas", 10), wrap=tk.WORD,
+        self.log_text = tk.Text(log_frame, height=5, font=("Consolas", 12), wrap=tk.WORD,
                                  relief=tk.FLAT, borderwidth=0,
                                  bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
         self.log_text.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 12))
@@ -511,7 +512,7 @@ class App:
             ttk.Label(frame, text=f"  {num}. {text}", font=("Microsoft YaHei UI", 10), wraplength=460).pack(anchor=tk.W, padx=(8, 0))
 
         # === Section 0: Environment ===
-        title("零、环境配置（首次使用必读）")
+        title("环境配置（首次使用必读）")
         body("首次启动时会自动检测 Python 依赖包是否齐全。如缺少，会弹窗提示并帮你一键安装（需联网，约 16 MB）。")
         body("如果没有任何弹窗提示，说明环境已就绪，直接使用即可。")
         body("你也可以随时点击右上角「环境检测」按钮手动检查。")
@@ -527,7 +528,7 @@ class App:
         step(4, "等待进度条走完，点击「打开PDF」查看结果")
 
         # === Section 3: Cookie ===
-        title("三、Cookie 设置（难点）")
+        title("三、Cookie 设置 ⚠️")
         body("Cookie 是你的小红书登录凭证，类似门禁卡。没有它，小红书服务器会拒绝返回笔记数据。Cookie 一般几周后过期，届时需要重新获取。")
         body("")
         body("获取 Cookie 的详细步骤：")
