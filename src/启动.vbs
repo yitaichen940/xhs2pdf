@@ -2,8 +2,9 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 Set shell = CreateObject("WScript.Shell")
 
 scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
-gui = """" & scriptDir & "\src\main.py" & """"
-logFile = scriptDir & "\启动错误.log"
+rootDir = fso.GetParentFolderName(scriptDir)
+gui = "-m src.main"
+logFile = rootDir & "\启动错误.log"
 
 pythonPath = ""
 paths = Array( _
@@ -34,7 +35,7 @@ If pythonPath = "" Then
     WScript.Quit 1
 End If
 
-shell.CurrentDirectory = scriptDir
+shell.CurrentDirectory = rootDir
 
 On Error Resume Next
 shell.Run """" & pythonPath & """ " & gui, 0, False
