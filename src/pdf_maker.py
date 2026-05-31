@@ -16,6 +16,8 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
         raise ValueError("没有内容可合并为PDF。")
 
     pdf = FPDF()
+    pdf.set_left_margin(15)
+    pdf.set_right_margin(15)
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_font('zh', '', _FONT_PATH)
     pdf.add_font('zh', 'B', _FONT_PATH)
@@ -38,10 +40,16 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
             # Split into paragraphs
             for para in text.split('\n'):
                 para = para.strip()
-                if para:
+                if not para:
+                    pdf.ln(4)
+                    continue
+                try:
                     pdf.multi_cell(0, 7, para)
-                else:
-                    pdf.ln(4)  # blank line between paragraphs
+                except RuntimeError:
+                    # Fallback: smaller font for oversized content
+                    pdf.set_font('zh', '', 8)
+                    pdf.multi_cell(0, 5, para)
+                    pdf.set_font('zh', '', 11)
             pdf.ln(2)
 
         elif item.type == 'image':
