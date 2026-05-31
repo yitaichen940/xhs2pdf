@@ -67,6 +67,14 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
             try:
                 if remove_watermark:
                     img = _crop_watermark(Image.open(local_path))
+                    if img.mode in ('RGBA', 'P', 'LA', 'PA'):
+                        bg = Image.new('RGB', img.size, (255, 255, 255))
+                        if img.mode == 'P':
+                            img = img.convert('RGBA')
+                        bg.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA') else None)
+                        img = bg
+                    elif img.mode != 'RGB':
+                        img = img.convert('RGB')
                     tmp = local_path + '.tmp.jpg'
                     img.save(tmp, 'JPEG', quality=90)
                     local_path = tmp
