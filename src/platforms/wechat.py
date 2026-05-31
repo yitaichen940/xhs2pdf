@@ -64,11 +64,8 @@ class WechatPlatform(BasePlatform):
             elif el.name == 'img':
                 src = el.get('data-src') or el.get('src', '')
                 if src and src.startswith('http'):
-                    # WeChat images: get original size by removing suffix
-                    # mmbiz.qpic.cn/.../640?wx_fmt=jpeg → remove /640
-                    orig = re.sub(r'/\d+\?', '?', src)
-                    if not orig.startswith('http'):
-                        orig = src
-                    items.append(ContentItem(type='image', data=orig))
+                    # Clean: remove fragment, normalize
+                    src = src.split('#')[0]
+                    items.append(ContentItem(type='image', data=src))
 
         return items

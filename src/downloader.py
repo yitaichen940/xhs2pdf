@@ -3,11 +3,29 @@ import time
 import requests
 from typing import Callable, Optional
 
-IMG_HEADERS = {
+BASE_HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-    'Referer': 'https://www.xiaohongshu.com/',
 }
+
+REFERER_MAP = {
+    'xhscdn.com': 'https://www.xiaohongshu.com/',
+    'xiaohongshu.com': 'https://www.xiaohongshu.com/',
+    'zhimg.com': 'https://www.zhihu.com/',
+    'qpic.cn': 'https://mp.weixin.qq.com/',
+    'mmbiz.qpic.cn': 'https://mp.weixin.qq.com/',
+}
+
+
+def _headers_for_url(url: str) -> dict:
+    h = dict(BASE_HEADERS)
+    for domain, referer in REFERER_MAP.items():
+        if domain in url:
+            h['Referer'] = referer
+            break
+    if 'Referer' not in h:
+        h['Referer'] = 'https://www.xiaohongshu.com/'
+    return h
 
 
 def download_images(
@@ -51,7 +69,7 @@ def _guess_ext(url: str) -> str:
 def _download_with_retry(url: str, filepath: str, max_retries: int) -> bool:
     for attempt in range(max_retries):
         try:
-            resp = requests.get(url, headers=IMG_HEADERS, timeout=30)
+            resp = requests.get(url, headers=_headers_for_url(url), timeout=30)
             resp.raise_for_status()
             with open(filepath, 'wb') as f:
                 f.write(resp.content)

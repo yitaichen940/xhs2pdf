@@ -54,13 +54,21 @@ class ZhihuPlatform(BasePlatform):
                 json_str = _extract_braces(text, brace_start)
                 if json_str:
                     json_str = re.sub(r'(?<!\w)undefined(?!\w)', 'null', json_str)
-                    return json.loads(json_str)
-        raise CookieExpiredError("无法提取知乎页面数据")
+                    data = json.loads(json_str)
+                    # Check if it has actual content
+                    if data.get('article') or data.get('question'):
+                        return data
+        # Try alternative: js-initialData
+        for script in soup.find_all('script', id='js-initialData'):
+            try:
+                return json.loads(script.string)
+            except Exception:
+                pass
+        raise CookieExpiredError("无法提取知乎页面数据，可能需要重新获取Cookie")
 
     def _parse_content(self, data: dict) -> NoteResult:
-        # Try article first, then answer
-        content_html = ''
         title = ''
+        content_html = ''
 
         # Article (zhuanlan.zhihu.com/p/xxx)
         article = data.get('article', {})
@@ -68,26 +76,63 @@ class ZhihuPlatform(BasePlatform):
             title = article.get('title', '')
             content_html = article.get('content', '')
 
-        # Answer (question/xxx/answer/xxx)
-        if not content_html:
-            answers = data.get('answer', {}) or data
-            # Try different paths
-            for path in ['answer', 'answers', 'question.answers']:
-                ans_data = data
-                for key in path.split('.'):
-                    ans_data = ans_data.get(key, {}) if isinstance(ans_data, dict) else {}
-                if isinstance(ans_data, dict) and ans_data.get('content'):
-                    content_html = ans_data.get('content', '')
+        # Question page
+        if not title:
+            question = data.get('question', {})
+            title = question.get('title', '')
+            # Try question detail HTML
+            if question.get('detail'):
+                content_html = question.get('detail', '')
+            # Try first answer
+            answers = data.get('answers') or data.get('question', {}).get('answers') or []
+            if isinstance(answers, list) and answers:
+                first = answers[0]
+                if isinstance(first, dict) and first.get('content'):
+                    if content_html:
+                        content_html += first['content']
+                    else:
+                        content_html = first['content']
+            elif isinstance(answers, dict):
+                answer_list = answers.get('data') or answers.get('list') or []
+                if isinstance(answer_list, list) and answer_list:
+                    ans = answer_list[0]
+                    if isinstance(ans, dict) and ans.get('content'):
+                        if content_html:
+                            content_html += ans['content']
+                        else:
+                            content_html = ans['content']
+
+        if not title:
+            # Fallback: try to find title in any field
+            for key in data:
+                v = data[key]
+                if isinstance(v, dict) and v.get('title'):
+                    title = v['title']
                     break
             if not title:
-                title = data.get('question', {}).get('title', '')
-
+                title = 'untitled'
         if not content_html:
-            raise CookieExpiredError("未找到知乎文章内容，可能需要登录")
+            # If no content HTML found, try to extract at least images from the whole data
+            content_html = self._find_content_in_data(data)
+        if not content_html:
+            raise CookieExpiredError("未找到知乎文章内容")
 
         title = re.sub(r'[\\/:*?"<>|\r\n\t]', '_', title).strip()[:80] or 'untitled'
         items = self._parse_html(content_html)
         return NoteResult(title=title, items=items)
+
+    def _find_content_in_data(self, data: dict, depth: int = 0) -> str:
+        """Recursively search for 'content' field in nested data."""
+        if depth > 5:
+            return ''
+        if isinstance(data, dict):
+            if 'content' in data and isinstance(data['content'], str) and len(data['content']) > 100:
+                return data['content']
+            for v in data.values():
+                result = self._find_content_in_data(v, depth + 1)
+                if result:
+                    return result
+        return ''
 
     def _parse_html(self, html: str) -> list:
         """Extract text paragraphs and images from content HTML in order."""
