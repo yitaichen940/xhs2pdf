@@ -27,6 +27,7 @@ class NoteResult:
 class BasePlatform(ABC):
     name: str = ""
     cookie_file: str = ""      # filename in root dir
+    login_url: str = ""        # URL to open for login
 
     @abstractmethod
     def match(self, url: str) -> bool:

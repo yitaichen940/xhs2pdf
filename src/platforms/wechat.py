@@ -14,6 +14,7 @@ HEADERS = {
 class WechatPlatform(BasePlatform):
     name = "微信公众号"
     cookie_file = ""  # No cookie needed
+    login_url = "https://mp.weixin.qq.com"
 
     def match(self, url: str) -> bool:
         return 'mp.weixin.qq.com' in url

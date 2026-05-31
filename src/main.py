@@ -219,7 +219,7 @@ class App:
         ttk.Button(ck_btn_row, text="测试Cookie", style='Small.TButton',
                    command=self._test_cookie).pack(side=tk.LEFT, padx=(0, 6))
         ttk.Button(ck_btn_row, text="打开登录页", style='Small.TButton',
-                   command=lambda: webbrowser.open('https://www.xiaohongshu.com')).pack(side=tk.LEFT)
+                   command=self._open_login).pack(side=tk.LEFT)
 
         # === Action buttons ===
         btn_frame = ttk.Frame(main)
@@ -382,6 +382,12 @@ class App:
         save_cookie(cookie, cf)
         self._refresh_cookie_status()
         self.log(f"[Cookie] {self.current_platform.name}Cookie已保存")
+
+    def _open_login(self):
+        if self.current_platform and self.current_platform.login_url:
+            webbrowser.open(self.current_platform.login_url)
+        else:
+            webbrowser.open('https://www.xiaohongshu.com')
 
     def _choose_out_dir(self):
         directory = filedialog.askdirectory(initialdir=self.out_dir_var.get(), title="选择PDF输出目录")
@@ -619,7 +625,8 @@ class App:
 
         btn_row = ttk.Frame(frame)
         btn_row.pack(pady=(16, 0))
-        ttk.Button(btn_row, text="打开小红书登录", command=lambda: webbrowser.open('https://www.xiaohongshu.com')).pack(side=tk.LEFT)
+        ttk.Button(btn_row, text="小红书登录", command=lambda: webbrowser.open('https://www.xiaohongshu.com')).pack(side=tk.LEFT, padx=(0, 4))
+        ttk.Button(btn_row, text="知乎登录", command=lambda: webbrowser.open('https://www.zhihu.com')).pack(side=tk.LEFT)
 
     def start_convert(self):
         self.convert_btn.config(state=tk.DISABLED)

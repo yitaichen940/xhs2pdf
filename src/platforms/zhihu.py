@@ -21,6 +21,7 @@ HTML_HEADERS = {
 class ZhihuPlatform(BasePlatform):
     name = "知乎"
     cookie_file = "cookie_zhihu.txt"
+    login_url = "https://www.zhihu.com"
 
     def match(self, url: str) -> bool:
         return 'zhihu.com' in url

@@ -15,6 +15,7 @@ HEADERS = {
 class XiaohongshuPlatform(BasePlatform):
     name = "小红书"
     cookie_file = "cookie_xhs.txt"
+    login_url = "https://www.xiaohongshu.com"
 
     def match(self, url: str) -> bool:
         return bool(re.search(r'(xhslink\.com|xiaohongshu\.com)', url))
