@@ -38,26 +38,11 @@ class ZhihuPlatform(BasePlatform):
         api_headers = dict(API_HEADERS_BASE, **{'Cookie': cookie, 'Referer': url})
         html_headers = dict(HTML_HEADERS, **{'Cookie': cookie})
 
-        # Get question info
+        # Get answers (also extracts title from response)
         title = 'untitled'
-        question_detail = ''
-        if qid:
-            try:
-                q_resp = requests.get(
-                    f'https://www.zhihu.com/api/v4/questions/{qid}',
-                    headers=api_headers, timeout=10
-                )
-                if q_resp.status_code == 200:
-                    q_data = q_resp.json()
-                    title = q_data.get('title', 'untitled')
-                    question_detail = q_data.get('detail', '') or ''
-            except Exception:
-                pass
-
-        # Get answers
         content_html = ''
         if aid:
-            # Single answer
+            # Single answer URL
             try:
                 a_resp = requests.get(
                     f'https://www.zhihu.com/api/v4/answers/{aid}',
@@ -66,16 +51,15 @@ class ZhihuPlatform(BasePlatform):
                 if a_resp.status_code == 200:
                     a_data = a_resp.json()
                     content_html = a_data.get('content', '')
-                    if not title or title == 'untitled':
-                        title = a_data.get('question', {}).get('title', 'untitled')
+                    title = a_data.get('question', {}).get('title', 'untitled')
             except Exception:
                 pass
         elif qid:
-            # Question page - get top answers
+            # Question page - get top 2 answers only
             try:
                 a_resp = requests.get(
                     f'https://www.zhihu.com/api/v4/questions/{qid}/answers',
-                    params={'limit': 5, 'include': 'data[*].content'},
+                    params={'limit': 2, 'include': 'data[*].content,data[*].question.title'},
                     headers=api_headers, timeout=10
                 )
                 if a_resp.status_code == 200:
@@ -85,37 +69,18 @@ class ZhihuPlatform(BasePlatform):
                         c = ans.get('content', '')
                         if c:
                             contents.append(c)
+                        # Get title from first answer
+                        if title == 'untitled':
+                            title = ans.get('question', {}).get('title', 'untitled')
                     content_html = '\n'.join(contents)
             except Exception:
                 pass
 
-        # Fallback: try HTML extraction
-        if not content_html:
-            try:
-                resp = requests.get(url, headers=html_headers, timeout=15)
-                data = self._extract_state(resp.text)
-                result = self._parse_state(data)
-                if result.title != 'untitled':
-                    title = result.title
-                content_html = self._find_content_in_data(data)
-            except Exception:
-                pass
-
-        if not content_html and question_detail:
-            content_html = question_detail
         if not content_html:
             raise CookieExpiredError("未找到知乎内容，该问题可能没有回答")
 
         title = re.sub(r'[\\/:*?"<>|\r\n\t]', '_', title).strip()[:80] or 'untitled'
-
-        # Build items: question detail first, then answers
-        items = []
-        if question_detail:
-            detail_text = BeautifulSoup(question_detail, 'html.parser').get_text(strip=True)
-            if detail_text:
-                items.append(ContentItem(type='text', data=f"问题描述: {detail_text}"))
-
-        items.extend(self._parse_html(content_html))
+        items = self._parse_html(content_html)
         if not items:
             raise CookieExpiredError("未找到可导出的内容")
         return NoteResult(title=title, items=items)
@@ -172,10 +137,16 @@ class ZhihuPlatform(BasePlatform):
     def _parse_html(self, html: str) -> list:
         items = []
         soup = BeautifulSoup(html, 'html.parser')
+        noise = {'发布于', '编辑于', '赞同', '喜欢', '收藏', '评论', '分享', '举报', '收起'}
+
         for el in soup.descendants:
             if el.name in ('p', 'h1', 'h2', 'h3', 'h4', 'li', 'blockquote'):
+                # Skip if parent is already processed
+                if el.parent and el.parent.name in ('p', 'li', 'blockquote'):
+                    continue
                 text = el.get_text(strip=True)
-                if text and len(text) > 1:
+                # Filter: min 3 chars, not pure noise
+                if text and len(text) > 2 and not any(text.startswith(n) for n in noise):
                     items.append(ContentItem(type='text', data=text))
             elif el.name == 'img':
                 src = el.get('data-original') or el.get('src') or el.get('data-actualsrc', '')
@@ -188,13 +159,25 @@ class ZhihuPlatform(BasePlatform):
                     if src and src.startswith('http'):
                         items.append(ContentItem(type='image', data=src))
 
-        if not items:
+        # Deduplicate consecutive identical text items
+        deduped = []
+        last_text = ''
+        for item in items:
+            if item.type == 'text':
+                if item.data == last_text:
+                    continue
+                last_text = item.data
+            else:
+                last_text = ''
+            deduped.append(item)
+
+        if not deduped:
             for img in soup.find_all('img'):
                 src = img.get('data-original') or img.get('src') or img.get('data-actualsrc', '')
                 if src and src.startswith('http') and 'zhimg' in src:
-                    items.append(ContentItem(type='image', data=src))
+                    deduped.append(ContentItem(type='image', data=src))
 
-        return items
+        return deduped
 
 
 def _extract_braces(text: str, start: int) -> str:
