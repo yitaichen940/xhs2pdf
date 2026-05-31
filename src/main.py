@@ -157,12 +157,11 @@ class App:
         tk.Label(url_inner, text="支持小红书 · 知乎 · 微信公众号   |   自动识别平台", font=("Microsoft YaHei UI", 8),
                  bg=CARD_BG, fg='#b0b0b0').pack(anchor=tk.W, pady=(0, 6))
 
-        input_bg = tk.Frame(url_inner, bg='#f0f2f5', padx=1, pady=1)
-        input_bg.pack(fill=tk.BOTH, expand=True)
-
-        self.url_entry = tk.Text(input_bg, height=2, font=("Microsoft YaHei UI", 11), wrap=tk.WORD,
+        self.url_entry = tk.Text(url_inner, height=2, font=("Microsoft YaHei UI", 11), wrap=tk.WORD,
                                   relief=tk.FLAT, borderwidth=0, padx=10, pady=8,
-                                  bg='#ffffff', fg=TEXT, insertbackground=TEXT)
+                                  bg='#f0f2f5', fg=TEXT, insertbackground=TEXT,
+                                  highlightthickness=1, highlightbackground='#c0c0c0',
+                                  highlightcolor='#0095f6')
         self.url_entry.pack(fill=tk.BOTH, expand=True)
 
         # === Options row ===
