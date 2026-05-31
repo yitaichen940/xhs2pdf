@@ -95,26 +95,25 @@ class App:
         ACCENT_HOVER = '#1877f2'
         TEXT = '#262626'
         TEXT_SEC = '#8e8e8e'
-        BORDER = '#dbdbdb'
+        BORDER = '#c7c7c7'
         SUCCESS = '#78de54'
-        WARNING = '#f0a030'
+        WARNING = '#d9920b'
         DANGER = '#ed4956'
-        LOG_BG = '#fafafa'
-        LOG_FG = '#262626'
 
-        style.configure('.', background=BG, foreground=TEXT, font=('Segoe UI', 9))
+        style.configure('.', background=BG, foreground=TEXT, font=('Microsoft YaHei UI', 10))
         style.configure('TFrame', background=BG)
-        style.configure('Card.TFrame', background=CARD_BG, relief='flat')
         style.configure('TLabel', background=BG, foreground=TEXT)
-        style.configure('Title.TLabel', font=('Segoe UI', 16, 'bold'), foreground=TEXT)
-        style.configure('Hint.TLabel', font=('Segoe UI', 9), foreground=TEXT_SEC)
+        style.configure('Title.TLabel', font=('Microsoft YaHei UI', 17, 'bold'), foreground=TEXT)
+        style.configure('Hint.TLabel', font=('Microsoft YaHei UI', 10), foreground=TEXT_SEC)
 
-        # Buttons
-        style.configure('TButton', font=('Segoe UI', 9), padding=(14, 6),
-                         relief='flat', borderwidth=0, background=BG)
-        style.map('TButton', background=[('active', '#f0f0f0'), ('!disabled', CARD_BG)],
-                  foreground=[('disabled', '#c7c7c7')])
-        style.configure('Small.TButton', font=('Segoe UI', 9), padding=(10, 4))
+        # Buttons — visible borders
+        style.configure('TButton', font=('Microsoft YaHei UI', 10), padding=(14, 7),
+                         relief='solid', borderwidth=1, bordercolor='#c0c0c0', background=CARD_BG)
+        style.map('TButton',
+                  background=[('active', '#f5f5f5'), ('!disabled', CARD_BG)],
+                  bordercolor=[('active', '#a0a0a0'), ('!disabled', '#c0c0c0')],
+                  foreground=[('disabled', '#c0c0c0')])
+        style.configure('Small.TButton', font=('Microsoft YaHei UI', 10), padding=(10, 5))
 
         # Checkbutton
         style.configure('TCheckbutton', background=BG, foreground=TEXT)
@@ -138,32 +137,32 @@ class App:
         status_row.pack(fill=tk.X, pady=(0, 12))
 
         self.env_btn = tk.Label(status_row, text="● 环境检测",
-                                 font=("Microsoft YaHei UI", 9), fg=WARNING, bg=BG, cursor="hand2")
-        self.env_btn.pack(side=tk.LEFT, padx=(0, 16))
+                                 font=("Microsoft YaHei UI", 10), fg=WARNING, bg=BG, cursor="hand2")
+        self.env_btn.pack(side=tk.LEFT, padx=(0, 20))
         self.env_btn.bind("<Button-1>", lambda e: self.check_env())
         self._add_label_hover(self.env_btn)
 
         self.cookie_status = tk.Label(status_row, text="● Cookie: 未设置",
-                                       font=("Microsoft YaHei UI", 9), fg=WARNING, bg=BG)
+                                       font=("Microsoft YaHei UI", 10), fg=WARNING, bg=BG)
         self.cookie_status.pack(side=tk.LEFT)
 
         ttk.Button(status_row, text="?", width=2, style='Small.TButton',
                    command=self.show_cookie_help).pack(side=tk.RIGHT)
 
         # === URL card ===
-        url_card = tk.Frame(main, bg=CARD_BG, highlightthickness=1, highlightbackground=BORDER)
+        url_card = tk.Frame(main, bg=CARD_BG, highlightthickness=2, highlightbackground=BORDER)
         url_card.pack(fill=tk.X, pady=(0, 12))
 
-        url_inner = tk.Frame(url_card, bg=CARD_BG, padx=16, pady=14)
+        url_inner = tk.Frame(url_card, bg=CARD_BG, padx=16, pady=16)
         url_inner.pack(fill=tk.X)
 
-        tk.Label(url_inner, text="粘贴链接或分享文本，自动识别", font=("Microsoft YaHei UI", 9),
+        tk.Label(url_inner, text="粘贴链接或分享文本，自动识别", font=("Microsoft YaHei UI", 10),
                  bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(0, 8))
 
-        self.url_entry = tk.Text(url_inner, height=3, font=("Microsoft YaHei UI", 10), wrap=tk.WORD,
+        self.url_entry = tk.Text(url_inner, height=3, font=("Microsoft YaHei UI", 11), wrap=tk.WORD,
                                   relief=tk.FLAT, borderwidth=0, padx=0, pady=0,
                                   bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
-        self.url_entry.pack(fill=tk.X)
+        self.url_entry.pack(fill=tk.BOTH, expand=True)
 
         # === Options row ===
         opt_frame = ttk.Frame(main)
@@ -179,22 +178,22 @@ class App:
         ttk.Label(opt_frame, text="输出", style='Hint.TLabel').pack(side=tk.LEFT, padx=(12, 4))
         self.out_dir_var = tk.StringVar(value=SCRIPT_DIR)
         self.out_dir_label = tk.Label(opt_frame, text=self._short_path(SCRIPT_DIR),
-                                       font=("Microsoft YaHei UI", 8), fg=TEXT_SEC, bg=BG,
+                                       font=("Microsoft YaHei UI", 9), fg=TEXT_SEC, bg=BG,
                                        anchor=tk.W, cursor="hand2")
         self.out_dir_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
         self.out_dir_label.bind("<Button-1>", lambda e: self._choose_out_dir())
 
         # === Cookie panel ===
-        self.cookie_frame = tk.Frame(main, bg=CARD_BG, highlightthickness=1, highlightbackground=BORDER)
-        ck_inner = tk.Frame(self.cookie_frame, bg=CARD_BG, padx=16, pady=14)
+        self.cookie_frame = tk.Frame(main, bg=CARD_BG, highlightthickness=2, highlightbackground=BORDER)
+        ck_inner = tk.Frame(self.cookie_frame, bg=CARD_BG, padx=16, pady=16)
         ck_inner.pack(fill=tk.X)
 
-        tk.Label(ck_inner, text="Cookie 设置", font=("Microsoft YaHei UI", 10, "bold"),
+        tk.Label(ck_inner, text="Cookie 设置", font=("Microsoft YaHei UI", 11, "bold"),
                  bg=CARD_BG, fg=TEXT).pack(anchor=tk.W)
         tk.Label(ck_inner, text="浏览器 F12 → Application → Cookies → 全选复制",
-                 font=("Microsoft YaHei UI", 8), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(4, 8))
+                 font=("Microsoft YaHei UI", 9), bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(4, 8))
 
-        self.cookie_text = tk.Text(ck_inner, height=2, font=("Consolas", 8), wrap=tk.WORD,
+        self.cookie_text = tk.Text(ck_inner, height=2, font=("Consolas", 9), wrap=tk.WORD,
                                     relief=tk.FLAT, borderwidth=0, padx=0, pady=0,
                                     bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
         self.cookie_text.pack(fill=tk.X, pady=(0, 10))
@@ -210,10 +209,10 @@ class App:
         btn_frame.pack(fill=tk.X, pady=(12, 10))
 
         self.convert_btn = tk.Button(btn_frame, text="开始转换",
-                                      font=("Microsoft YaHei UI", 12, "bold"),
+                                      font=("Microsoft YaHei UI", 13, "bold"),
                                       fg='#ffffff', bg=ACCENT,
                                       activebackground='#0084e0', activeforeground='#ffffff',
-                                      relief=tk.FLAT, bd=0, padx=36, pady=12, cursor="hand2",
+                                      relief=tk.FLAT, bd=0, padx=40, pady=14, cursor="hand2",
                                       command=self.start_convert)
         self.convert_btn.pack(side=tk.LEFT, padx=(0, 8))
         self._add_hover(self.convert_btn, ACCENT, '#0084e0', '#ffffff')
@@ -233,22 +232,22 @@ class App:
         self.progress_label.pack(side=tk.RIGHT, padx=(8, 0))
 
         # === Log area ===
-        log_frame = tk.Frame(main, bg=CARD_BG, highlightthickness=1, highlightbackground=BORDER)
-        log_frame.pack(fill=tk.BOTH, expand=True, pady=(10, 0))
+        log_frame = tk.Frame(main, bg=CARD_BG, highlightthickness=2, highlightbackground=BORDER)
+        log_frame.pack(fill=tk.BOTH, expand=True, pady=(12, 0))
 
         log_header = tk.Frame(log_frame, bg=CARD_BG)
         log_header.pack(fill=tk.X, padx=16, pady=(12, 6))
-        tk.Label(log_header, text="状态", font=("Microsoft YaHei UI", 9, "bold"),
+        tk.Label(log_header, text="状态", font=("Microsoft YaHei UI", 10, "bold"),
                  bg=CARD_BG, fg=TEXT).pack(side=tk.LEFT)
 
-        self.log_text = tk.Text(log_frame, height=5, font=("Consolas", 9), wrap=tk.WORD,
+        self.log_text = tk.Text(log_frame, height=5, font=("Consolas", 10), wrap=tk.WORD,
                                  relief=tk.FLAT, borderwidth=0,
                                  bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
-        self.log_text.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 10))
+        self.log_text.pack(fill=tk.BOTH, expand=True, padx=16, pady=(0, 12))
         self.log_text.config(state=tk.DISABLED)
 
         # === Result ===
-        self.result_label = tk.Label(main, text="", font=("Microsoft YaHei UI", 10, "bold"),
+        self.result_label = tk.Label(main, text="", font=("Microsoft YaHei UI", 11, "bold"),
                                       bg=BG, fg=TEXT)
         self.result_label.pack(pady=(10, 0))
 
