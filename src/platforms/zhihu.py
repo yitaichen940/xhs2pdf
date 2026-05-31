@@ -137,29 +137,35 @@ class ZhihuPlatform(BasePlatform):
     def _parse_html(self, html: str) -> list:
         items = []
         soup = BeautifulSoup(html, 'html.parser')
-        noise = {'发布于', '编辑于', '赞同', '喜欢', '收藏', '评论', '分享', '举报', '收起'}
+        noise = {'发布于', '编辑于', '赞同', '喜欢', '收藏', '评论', '分享', '举报', '收起', '添加评论', '回复', '展开'}
 
-        for el in soup.descendants:
-            if el.name in ('p', 'h1', 'h2', 'h3', 'h4', 'li', 'blockquote'):
-                # Skip if parent is already processed
-                if el.parent and el.parent.name in ('p', 'li', 'blockquote'):
+        # Walk only direct children (depth limit: 3) to avoid comment sections
+        def _walk(el, depth=0):
+            if depth > 3:
+                return
+            for child in el.children:
+                if not hasattr(child, 'name') or child.name is None:
                     continue
-                text = el.get_text(strip=True)
-                # Filter: min 3 chars, not pure noise
-                if text and len(text) > 2 and not any(text.startswith(n) for n in noise):
-                    items.append(ContentItem(type='text', data=text))
-            elif el.name == 'img':
-                src = el.get('data-original') or el.get('src') or el.get('data-actualsrc', '')
-                if src and src.startswith('http'):
-                    items.append(ContentItem(type='image', data=src))
-            elif el.name == 'figure':
-                img = el.find('img')
-                if img:
-                    src = img.get('data-original') or img.get('src') or img.get('data-actualsrc', '')
+                if child.name in ('p', 'h1', 'h2', 'h3', 'h4', 'li', 'blockquote'):
+                    text = child.get_text(strip=True)
+                    if text and len(text) > 2 and not any(text.startswith(n) for n in noise):
+                        items.append(ContentItem(type='text', data=text))
+                elif child.name == 'img':
+                    src = child.get('data-original') or child.get('src') or child.get('data-actualsrc', '')
                     if src and src.startswith('http'):
                         items.append(ContentItem(type='image', data=src))
+                elif child.name == 'figure':
+                    img = child.find('img')
+                    if img:
+                        src = img.get('data-original') or img.get('src') or img.get('data-actualsrc', '')
+                        if src and src.startswith('http'):
+                            items.append(ContentItem(type='image', data=src))
+                else:
+                    _walk(child, depth + 1)
 
-        # Deduplicate consecutive identical text items
+        _walk(soup)
+
+        # Deduplicate
         deduped = []
         last_text = ''
         for item in items:
@@ -170,12 +176,6 @@ class ZhihuPlatform(BasePlatform):
             else:
                 last_text = ''
             deduped.append(item)
-
-        if not deduped:
-            for img in soup.find_all('img'):
-                src = img.get('data-original') or img.get('src') or img.get('data-actualsrc', '')
-                if src and src.startswith('http') and 'zhimg' in src:
-                    deduped.append(ContentItem(type='image', data=src))
 
         return deduped
 
