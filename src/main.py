@@ -33,7 +33,10 @@ DEFAULT_OUT_DIR = os.path.join(ROOT_DIR, 'output')
 def extract_url(text: str) -> str:
     patterns = [
         r'https?://xhslink\.com/\S+',
-        r'https?://www\.xiaohongshu\.com/\S+',
+        r'https?://(?:www\.)?xiaohongshu\.com/\S+',
+        r'https?://(?:www\.)?zhihu\.com/\S+',
+        r'https?://zhuanlan\.zhihu\.com/\S+',
+        r'https?://mp\.weixin\.qq\.com/\S+',
     ]
     for pat in patterns:
         m = re.search(pat, text)

@@ -53,7 +53,7 @@ class WechatPlatform(BasePlatform):
                 # Skip if contains only images
                 if el.name == 'section' and el.find('img'):
                     continue
-                text = el.get_text(stripped=True)
+                text = el.get_text(strip=True)
                 # Clean up whitespace
                 text = re.sub(r'\s+', ' ', text).strip()
                 if text and len(text) > 1 and not text.startswith('微信扫一扫'):
