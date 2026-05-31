@@ -21,9 +21,9 @@ import shutil
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-from fetcher import resolve_note_url, parse_note_id, fetch_note_html, extract_note_data, extract_note_info
-from downloader import download_images
-from pdf_maker import images_to_pdf
+from src.fetcher import resolve_note_url, parse_note_id, fetch_note_html, extract_note_data, extract_note_info
+from src.downloader import download_images
+from src.pdf_maker import images_to_pdf
 
 
 def load_cookie(cli_cookie: str = "") -> str:
@@ -36,8 +36,8 @@ def load_cookie(cli_cookie: str = "") -> str:
         return env_cookie
 
     # Try cookie.txt in the same directory as this script
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    cookie_file = os.path.join(script_dir, 'cookie.txt')
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    cookie_file = os.path.join(root_dir, 'cookie.txt')
     if os.path.exists(cookie_file):
         with open(cookie_file, 'r', encoding='utf-8') as f:
             content = f.read().strip()

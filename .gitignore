@@ -4,3 +4,4 @@ __pycache__/
 *.pdf
 debug_*
 启动错误.log
+output/

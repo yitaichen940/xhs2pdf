@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""小红书笔记图片 → PDF 转换工具 (GUI版)"""
+"""小红书笔记图片 → PDF 转换工具 """
 
 import os
 import sys
@@ -21,15 +21,16 @@ if sys.platform == 'win32':
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from fetcher import (
+from src.fetcher import (
     resolve_note_url, parse_note_id, fetch_note_html,
     extract_note_data, extract_note_info, CookieExpiredError,
 )
-from downloader import download_images
-from pdf_maker import images_to_pdf
+from src.downloader import download_images
+from src.pdf_maker import images_to_pdf
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-COOKIE_FILE = os.path.join(SCRIPT_DIR, 'cookie.txt')
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+COOKIE_FILE = os.path.join(ROOT_DIR, 'cookie.txt')
+DEFAULT_OUT_DIR = os.path.join(ROOT_DIR, 'output')
 
 
 def extract_url(text: str) -> str:
@@ -177,8 +178,8 @@ class App:
                          command=self._toggle_cookie_panel).pack(side=tk.LEFT, padx=(12, 0))
 
         ttk.Label(opt_frame, text="输出", style='Hint.TLabel').pack(side=tk.LEFT, padx=(12, 4))
-        self.out_dir_var = tk.StringVar(value=SCRIPT_DIR)
-        self.out_dir_label = tk.Label(opt_frame, text=self._short_path(SCRIPT_DIR),
+        self.out_dir_var = tk.StringVar(value=DEFAULT_OUT_DIR)
+        self.out_dir_label = tk.Label(opt_frame, text=self._short_path(ROOT_DIR),
                                        font=("Microsoft YaHei UI", 9), fg=TEXT_SEC, bg=BG,
                                        anchor=tk.W)
         self.out_dir_label.pack(side=tk.LEFT, fill=tk.X, expand=True)

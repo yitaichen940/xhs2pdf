@@ -2,7 +2,7 @@ Set fso = CreateObject("Scripting.FileSystemObject")
 Set shell = CreateObject("WScript.Shell")
 
 scriptDir = fso.GetParentFolderName(WScript.ScriptFullName)
-gui = """" & scriptDir & "\gui.py" & """"
+gui = """" & scriptDir & "\src\main.py" & """"
 logFile = scriptDir & "\启动错误.log"
 
 pythonPath = ""
