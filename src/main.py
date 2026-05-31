@@ -154,12 +154,15 @@ class App:
         url_inner = tk.Frame(url_card, bg=CARD_BG, padx=16, pady=16)
         url_inner.pack(fill=tk.X)
 
-        tk.Label(url_inner, text="粘贴链接或分享文本，自动识别", font=("Microsoft YaHei UI", 10),
-                 bg=CARD_BG, fg=TEXT_SEC).pack(anchor=tk.W, pady=(0, 8))
+        tk.Label(url_inner, text="支持小红书 · 知乎 · 微信公众号   |   自动识别平台", font=("Microsoft YaHei UI", 8),
+                 bg=CARD_BG, fg='#b0b0b0').pack(anchor=tk.W, pady=(0, 6))
 
-        self.url_entry = tk.Text(url_inner, height=2, font=("Microsoft YaHei UI", 11), wrap=tk.WORD,
-                                  relief=tk.FLAT, borderwidth=0, padx=0, pady=0,
-                                  bg=CARD_BG, fg=TEXT, insertbackground=TEXT)
+        input_bg = tk.Frame(url_inner, bg='#f0f2f5', padx=1, pady=1)
+        input_bg.pack(fill=tk.BOTH, expand=True)
+
+        self.url_entry = tk.Text(input_bg, height=2, font=("Microsoft YaHei UI", 11), wrap=tk.WORD,
+                                  relief=tk.FLAT, borderwidth=0, padx=10, pady=8,
+                                  bg='#ffffff', fg=TEXT, insertbackground=TEXT)
         self.url_entry.pack(fill=tk.BOTH, expand=True)
 
         # === Options row ===
@@ -329,13 +332,16 @@ class App:
         return ""
 
     def _refresh_cookie_status(self):
+        if not self.current_platform:
+            self._set_cookie_color('yellow', '● Cookie: 等待识别平台')
+            return
         cf = self._platform_cookie_file()
         if cf and load_cookie(cf):
             self._set_cookie_color('green', f'● Cookie: {self.current_platform.name}已加载')
         elif cf:
             self._set_cookie_color('yellow', f'● Cookie: {self.current_platform.name}未设置')
         else:
-            self._set_cookie_color('yellow', '● Cookie: 无需设置')
+            self._set_cookie_color('green', '● Cookie: 无需设置')
 
     def _toggle_cookie_panel(self):
         if self.show_cookie_var.get():
@@ -565,17 +571,18 @@ class App:
 
         # === Section 1: Overview ===
         title("一、工具简介")
-        body("将小红书笔记中的图片按顺序下载并合并为一个 PDF 文件。支持短链接(xhslink.com)和完整链接，自动识别粘贴文本中的 URL。")
+        body("支持 小红书、知乎、微信公众号 三个平台。粘贴链接后自动识别平台，将文章中的文字和图片按原顺序导出为 PDF。支持短链接(xhslink.com)和完整链接，可识别整段分享文本中的 URL。")
 
         title("二、基本使用流程")
-        step(1, "复制小红书笔记的分享链接（或整段分享文本）")
-        step(2, "粘贴到主界面的文本框中")
-        step(3, "点击「开始转换」")
+        step(1, "复制文章的分享链接（或整段分享文本）")
+        step(2, "粘贴到白色输入框中（上方小字显示支持的平台）")
+        step(3, "点击「开始转换」（自动识别平台）")
         step(4, "等待进度条走完，点击「打开PDF」查看结果")
 
         # === Section 3: Cookie ===
         title("三、Cookie 设置 ⚠️")
-        body("Cookie 是你的小红书登录凭证，类似门禁卡。没有它，小红书服务器会拒绝返回笔记数据。Cookie 一般几周后过期，届时需要重新获取。")
+        body("小红书和知乎需要登录凭证(Cookie)才能访问完整内容。微信公众号文章是公开的，无需 Cookie。")
+        body("Cookie 类似门禁卡，一般几周后过期，届时需要重新获取。工具会根据链接自动切换对应平台的 Cookie 设置。")
         body("")
         body("获取 Cookie 的详细步骤：")
         step(1, "点击下方「打开小红书登录」按钮，在浏览器中打开网页")
@@ -598,15 +605,15 @@ class App:
 
         # === Section 4: Options ===
         title("四、其他功能说明")
-        body("去除水印：勾选后自动裁剪图片底部 7%（小红书水印区域）。如果图片本身没有水印或有重要内容在底部，可取消勾选。")
-        body("输出目录：PDF 默认保存在工具所在文件夹。点击「选择目录」可更改保存位置。")
-        body("环境检测：首次使用时，先点此按钮。自动检查依赖包，如有缺失会弹窗提示安装。")
+        body("去除水印：勾选后自动裁剪图片底部 7%（水印区域）。如果图片本身没有水印或有重要内容在底部，可取消勾选。")
+        body("输出目录：PDF 默认保存在 output/ 文件夹。点击「修改」可更改保存位置。")
+        body("环境检测：首次使用或发给别人时，先点此按钮。自动检查缺少的依赖包，弹窗一键安装。")
 
         title("五、常见报错处理")
         body("「Cookie 已过期/无效」→ 重新获取 Cookie（见第三节）")
         body("「触发验证码」→ Cookie 失效，重新获取")
-        body("「笔记不存在或已被删除」→ 该链接已失效，检查链接是否正确")
-        body("「该笔记不包含图片」→ 这篇笔记是纯文字或视频，不支持转换")
+        body("「暂不支持的链接」→ 链接不是小红书/知乎/公众号，或格式有误")
+        body("「文章内容为空」→ 该链接可能已失效，检查链接是否正确")
 
         btn_row = ttk.Frame(frame)
         btn_row.pack(pady=(16, 0))
