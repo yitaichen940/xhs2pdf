@@ -26,12 +26,12 @@ Next
 
 If pythonPath = "" Then
     Dim logF, msg
-    msg = "[" & Now & "] Python not found. Please install Python first." & vbCrLf
+    msg = "[" & Now & "] Python not found." & vbCrLf
     Set logF = fso.OpenTextFile(logFile, 8, True)
     logF.Write msg
     logF.Close
     shell.Run "https://www.python.org/downloads/"
-    MsgBox "未检测到 Python，正在打开下载页面。请安装 Python 3.8+ 并勾选 Add to PATH，安装完成后重新运行本程序。", 64, "首次使用"
+    MsgBox "Python not found. Download page opened. Please install Python 3.8+ with 'Add to PATH' checked, then restart.", 64, "Python Required"
     WScript.Quit 1
 End If
 
