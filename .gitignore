@@ -3,6 +3,5 @@ __pycache__/
 *.pyc
 *.pdf
 debug_*
-启动错误.log
-启动日志.log
+xhs2pdf.log
 output/
