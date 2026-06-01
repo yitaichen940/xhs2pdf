@@ -4,7 +4,7 @@
 
 ## 使用方法
 
-**Windows**：双击 `启动.vbs`
+**Windows**：双击 `启动.bat`（`.vbs` 备用）
 
 **Linux**：`chmod +x 启动.sh && ./启动.sh`（首次运行自动安装依赖和字体）
 
@@ -33,7 +33,8 @@ Cookie 约几周后过期，届时重新获取即可。
 
 ```
 xhs2pdf/
-├── 启动.vbs          # Windows 启动器
+├── 启动.bat          # Windows 启动器 (推荐)
+├── 启动.vbs          # Windows 启动器 (备用)
 ├── 启动.sh           # Linux 启动器
 ├── cookie_xhs.txt    # 小红书 Cookie
 ├── cookie_zhihu.txt  # 知乎 Cookie
