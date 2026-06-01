@@ -4,9 +4,15 @@ from PIL import Image
 from fpdf import FPDF
 
 # System Chinese font
-_FONT_PATH = r'C:\Windows\Fonts\simhei.ttf'
-if not os.path.exists(_FONT_PATH):
-    _FONT_PATH = r'C:\Windows\Fonts\msyh.ttc'
+_FONT_PATHS = [
+    r'C:\Windows\Fonts\simhei.ttf',
+    r'C:\Windows\Fonts\msyh.ttc',
+    '/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc',
+    '/usr/share/fonts/truetype/wqy/wqy-microhei.ttc',
+    '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
+    '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',
+]
+_FONT_PATH = next((p for p in _FONT_PATHS if os.path.exists(p)), _FONT_PATHS[0])
 
 
 def content_to_pdf(items: list, image_path_map: dict, title: str,

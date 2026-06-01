@@ -30,6 +30,15 @@ ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUT_DIR = os.path.join(ROOT_DIR, 'output')
 
 
+def _open_file(path: str):
+    """Cross-platform file opener."""
+    if sys.platform == 'win32':
+        os.startfile(path)
+    else:
+        import subprocess
+        subprocess.run(['xdg-open', path])
+
+
 def extract_url(text: str) -> str:
     patterns = [
         r'https?://xhslink\.com/\S+',
@@ -769,11 +778,11 @@ class App:
 
     def open_pdf(self):
         if self.output_path and os.path.exists(self.output_path):
-            os.startfile(self.output_path)
+            _open_file(self.output_path)
 
     def open_dir(self):
         if self.output_path:
-            os.startfile(os.path.dirname(self.output_path))
+            _open_file(os.path.dirname(self.output_path))
 
 
 def main():
