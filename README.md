@@ -14,10 +14,10 @@
 
 ## Cookie 配置
 
-首次使用需配置小红书 Cookie（登录凭证）：
+**小红书 / 知乎** 需要登录凭证才能访问内容（微信公众号无需）：
 
-1. 浏览器打开 https://www.xiaohongshu.com 并登录
-2. 按 `F12` → `Application` → `Cookies` → `www.xiaohongshu.com`
+1. 浏览器打开对应网站并登录
+2. 按 `F12` → `Application` → `Cookies`
 3. 全选右侧 Cookie → 复制
 4. 回到工具，勾选「Cookie」→ 粘贴 → 保存
 
@@ -25,15 +25,18 @@ Cookie 约几周后过期，届时重新获取即可。
 
 ## 环境要求
 
-- Python 3.8+
-- 依赖自动安装，无需手动操作
+**Windows**：需提前安装 Python 3.8+（[下载](https://www.python.org/downloads/)，安装时勾选 `Add to PATH`）。如未安装，启动时会自动打开下载页。
+
+**Linux**：无需提前准备，`启动.sh` 自动安装所有依赖。
 
 ## 项目结构
 
 ```
 xhs2pdf/
-├── 启动.vbs          # 启动器
-├── cookie.txt        # Cookie 配置
+├── 启动.vbs          # Windows 启动器
+├── 启动.sh           # Linux 启动器
+├── cookie_xhs.txt    # 小红书 Cookie
+├── cookie_zhihu.txt  # 知乎 Cookie
 ├── output/           # PDF 输出目录
 └── src/              # 源码
 ```
