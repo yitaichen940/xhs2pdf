@@ -30,7 +30,8 @@ If pythonPath = "" Then
     Set logF = fso.OpenTextFile(logFile, 8, True)
     logF.Write msg
     logF.Close
-    MsgBox "Python not found. Please install Python first.", 48, "Error"
+    shell.Run "https://www.python.org/downloads/"
+    MsgBox "未检测到 Python，正在打开下载页面。请安装 Python 3.8+ 并勾选 Add to PATH，安装完成后重新运行本程序。", 64, "首次使用"
     WScript.Quit 1
 End If
 
