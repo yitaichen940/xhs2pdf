@@ -21,10 +21,19 @@ if sys.platform == 'win32':
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 
-from src.platforms import detect_platform, PLATFORMS
-from src.platforms.base import UnsupportedError, CookieExpiredError
-from src.downloader import download_images
-from src.pdf_maker import content_to_pdf, images_to_pdf
+try:
+    from src.platforms import detect_platform, PLATFORMS
+    from src.platforms.base import UnsupportedError, CookieExpiredError
+    from src.downloader import download_images
+    from src.pdf_maker import content_to_pdf, images_to_pdf
+except ImportError:
+    import subprocess
+    subprocess.run([sys.executable, '-m', 'pip', 'install', '-q',
+                    'requests', 'Pillow', 'tqdm', 'beautifulsoup4', 'fpdf2'])
+    from src.platforms import detect_platform, PLATFORMS
+    from src.platforms.base import UnsupportedError, CookieExpiredError
+    from src.downloader import download_images
+    from src.pdf_maker import content_to_pdf, images_to_pdf
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_OUT_DIR = os.path.join(ROOT_DIR, 'output')
