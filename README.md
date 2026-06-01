@@ -25,7 +25,7 @@ Cookie 约几周后过期，届时重新获取即可。
 
 ## 环境要求
 
-**Windows**：需提前安装 Python 3.8+（[下载](https://www.python.org/downloads/)，安装时勾选 `Add to PATH`）。如未安装，启动时会自动打开下载页。
+**Windows**：需提前安装 Python 3.7+（[下载](https://www.python.org/downloads/)，安装时勾选 `Add to PATH`）。如未安装，启动时会自动打开下载页。
 
 **Linux**：无需提前准备，`启动.sh` 自动安装所有依赖。
 

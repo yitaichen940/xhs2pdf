@@ -12,7 +12,7 @@ if "%PY%"=="" (
     echo Python NOT FOUND >> xhs2pdf.log
     start https://www.python.org/downloads/
     echo.
-    echo Python not found. Please install Python 3.8+ (check 'Add to PATH').
+    echo Python not found. Please install Python 3.7+ (check 'Add to PATH').
     echo Download page opened.
     echo.
     pause

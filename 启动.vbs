@@ -58,7 +58,7 @@ WriteLog "pythonPath: " & pythonPath
 If pythonPath = "" Then
     WriteLog "Python NOT FOUND"
     shell.Run "https://www.python.org/downloads/"
-    MsgBox "Python not found. Download page opened." & vbCrLf & "Please install Python 3.8+ with 'Add to PATH' checked.", 64, "Python Required"
+    MsgBox "Python not found. Download page opened." & vbCrLf & "Please install Python 3.7+ with 'Add to PATH' checked.", 64, "Python Required"
     WScript.Quit 1
 End If
 
