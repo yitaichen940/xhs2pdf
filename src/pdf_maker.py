@@ -37,7 +37,27 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
 
     for item in items:
         if item.type == 'text':
-            pdf.set_font('zh', '', 11)
+            # Apply style
+            style = getattr(item, 'style', '')
+            if style == 'heading':
+                pdf.set_font('zh', 'B', 16)
+                pdf.set_x(pdf.l_margin)
+                pdf.multi_cell(0, 10, item.data.strip())
+                pdf.ln(4)
+                continue
+            elif style == 'subheading':
+                pdf.set_font('zh', 'B', 13)
+                pdf.set_x(pdf.l_margin)
+                pdf.multi_cell(0, 8, item.data.strip())
+                pdf.ln(2)
+                continue
+            elif style == 'bold':
+                pdf.set_font('zh', 'B', 11)
+            elif style == 'italic':
+                pdf.set_font('zh', '', 11)
+            else:
+                pdf.set_font('zh', '', 11)
+
             text = item.data.strip()
             if not text:
                 continue

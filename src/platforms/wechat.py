@@ -68,17 +68,27 @@ class WechatPlatform(BasePlatform):
                 return
 
             if el.name in ('p', 'h1', 'h2', 'h3', 'h4', 'li', 'blockquote'):
-                # Check if this block element contains directly an image (image-only block)
+                # Check for images directly inside
                 imgs = el.find_all('img', recursive=False)
                 for img in imgs:
                     src = img.get('data-src') or img.get('src', '')
                     if src and src.startswith('http'):
                         items.append(ContentItem(type='image', data=src.split('#')[0]))
-                # Get text - full text of this block (including nested spans)
+                # Full text
                 text = el.get_text(strip=True)
                 text = re.sub(r'\s+', ' ', text).strip()
                 if text and len(text) > 1 and not text.startswith('微信扫一扫'):
-                    items.append(ContentItem(type='text', data=text))
+                    # Detect style
+                    style = ''
+                    if el.name in ('h1', 'h2'):
+                        style = 'heading'
+                    elif el.name in ('h3', 'h4'):
+                        style = 'subheading'
+                    elif el.find('strong') or el.find('b'):
+                        style = 'bold'
+                    elif el.find('em') or el.find('i'):
+                        style = 'italic'
+                    items.append(ContentItem(type='text', data=text, style=style))
                 return
 
             # For section/div/span: recurse into children but don't emit text directly

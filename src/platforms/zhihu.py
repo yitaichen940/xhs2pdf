@@ -150,7 +150,12 @@ class ZhihuPlatform(BasePlatform):
                 if child.name in ('p', 'h1', 'h2', 'h3', 'h4', 'li', 'blockquote'):
                     text = child.get_text(strip=True)
                     if text and len(text) > 2 and not any(text.startswith(n) for n in noise):
-                        items.append(ContentItem(type='text', data=text))
+                        style = ''
+                        if child.name in ('h1', 'h2'): style = 'heading'
+                        elif child.name in ('h3', 'h4'): style = 'subheading'
+                        elif child.find('strong') or child.find('b'): style = 'bold'
+                        elif child.find('em') or child.find('i'): style = 'italic'
+                        items.append(ContentItem(type='text', data=text, style=style))
                 elif child.name == 'img':
                     src = child.get('data-original') or child.get('src') or child.get('data-actualsrc', '')
                     if src and src.startswith('http'):

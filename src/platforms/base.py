@@ -15,6 +15,7 @@ class UnsupportedError(RuntimeError):
 class ContentItem:
     type: str          # "text" | "image"
     data: str          # text content | image URL
+    style: str = ""    # "" | "bold" | "heading" | "subheading" | "italic"
     width: int = 0
     height: int = 0
 
