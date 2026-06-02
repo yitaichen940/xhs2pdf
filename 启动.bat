@@ -32,11 +32,5 @@ if %errorlevel% neq 0 (
 )
 
 :: Launch
-where pythonw >nul 2>&1
-if %errorlevel% equ 0 (
-    echo Using pythonw >> xhs2pdf.log
-    start "" pythonw -m src.main
-) else (
-    echo Using python >> xhs2pdf.log
-    start "" %PY% -m src.main
-)
+echo Launching... >> xhs2pdf.log
+start "" 启动.vbs
