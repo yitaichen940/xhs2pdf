@@ -49,30 +49,44 @@ class WechatPlatform(BasePlatform):
         return NoteResult(title=title, items=items)
 
     def _parse_content(self, content) -> list:
-        """Walk content DOM, emit text paragraphs and images in order."""
+        """Walk content DOM, emit text paragraphs and images in original order."""
         items = []
-        # Remove script/style
         for tag in content.find_all(['script', 'style']):
             tag.decompose()
 
-        for el in content.descendants:
-            if el.name in ('p', 'h1', 'h2', 'h3', 'h4', 'li', 'blockquote', 'span', 'section'):
-                # Skip if contains only images
-                if el.name == 'section' and el.find('img'):
-                    continue
-                text = el.get_text(strip=True)
-                # Clean up whitespace
-                text = re.sub(r'\s+', ' ', text).strip()
-                if text and len(text) > 1 and not text.startswith('微信扫一扫'):
-                    # Avoid duplicates from nested tags
-                    if el.find('p') or el.find('span'):
-                        continue
-                    items.append(ContentItem(type='text', data=text))
-            elif el.name == 'img':
+        def _walk(el, depth=0):
+            if depth > 3 or not hasattr(el, 'name') or el.name is None:
+                return
+            if el.name in ('script', 'style'):
+                return
+
+            if el.name == 'img':
                 src = el.get('data-src') or el.get('src', '')
                 if src and src.startswith('http'):
-                    # Clean: remove fragment, normalize
                     src = src.split('#')[0]
                     items.append(ContentItem(type='image', data=src))
+                return
+
+            if el.name in ('p', 'h1', 'h2', 'h3', 'h4', 'li', 'blockquote'):
+                # Check if this block element contains directly an image (image-only block)
+                imgs = el.find_all('img', recursive=False)
+                for img in imgs:
+                    src = img.get('data-src') or img.get('src', '')
+                    if src and src.startswith('http'):
+                        items.append(ContentItem(type='image', data=src.split('#')[0]))
+                # Get text - full text of this block (including nested spans)
+                text = el.get_text(strip=True)
+                text = re.sub(r'\s+', ' ', text).strip()
+                if text and len(text) > 1 and not text.startswith('微信扫一扫'):
+                    items.append(ContentItem(type='text', data=text))
+                return
+
+            # For section/div/span: recurse into children but don't emit text directly
+            for child in el.children:
+                if hasattr(child, 'name'):
+                    _walk(child, depth + 1)
+
+        for child in content.children:
+            _walk(child, 0)
 
         return items
