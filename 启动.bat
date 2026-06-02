@@ -12,8 +12,8 @@ if "%PY%"=="" (
     echo Python NOT FOUND >> xhs2pdf.log
     start https://www.python.org/downloads/
     echo.
-    echo Python not found. Please install Python 3.7+ (check 'Add to PATH').
-    echo Download page opened.
+    echo Python not found.
+    echo Please install Python 3.7+, check Add to PATH when installing.
     echo.
     pause
     exit /b
@@ -21,16 +21,14 @@ if "%PY%"=="" (
 
 echo Python: %PY% >> xhs2pdf.log
 
-:: Check and install dependencies
 echo Checking dependencies...
 "%PY%" -c "import requests, PIL, tqdm, bs4, fpdf" >nul 2>&1
 if %errorlevel% neq 0 (
     echo Installing dependencies... >> xhs2pdf.log
-    echo Installing Python packages (one time, ~16MB)...
+    echo Installing Python packages (about 16MB, one-time)...
     "%PY%" -m pip install -q requests Pillow tqdm beautifulsoup4 fpdf2
     echo Done.
 )
 
-:: Launch
 echo Launching... >> xhs2pdf.log
 start "" 启动.vbs
