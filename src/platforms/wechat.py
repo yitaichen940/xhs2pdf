@@ -84,10 +84,6 @@ class WechatPlatform(BasePlatform):
                         style = 'heading'
                     elif el.name in ('h3', 'h4'):
                         style = 'subheading'
-                    elif el.find('strong') or el.find('b'):
-                        style = 'bold'
-                    elif el.find('em') or el.find('i'):
-                        style = 'italic'
                     items.append(ContentItem(type='text', data=text, style=style))
                 return
 

@@ -153,8 +153,6 @@ class ZhihuPlatform(BasePlatform):
                         style = ''
                         if child.name in ('h1', 'h2'): style = 'heading'
                         elif child.name in ('h3', 'h4'): style = 'subheading'
-                        elif child.find('strong') or child.find('b'): style = 'bold'
-                        elif child.find('em') or child.find('i'): style = 'italic'
                         items.append(ContentItem(type='text', data=text, style=style))
                 elif child.name == 'img':
                     src = child.get('data-original') or child.get('src') or child.get('data-actualsrc', '')
