@@ -190,7 +190,19 @@ class App:
         opt_frame.pack(fill=tk.X, pady=(0, 8))
 
         self.watermark_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(opt_frame, text="去除水印", variable=self.watermark_var).pack(side=tk.LEFT)
+        ttk.Checkbutton(opt_frame, text="裁剪", variable=self.watermark_var).pack(side=tk.LEFT)
+
+        tk.Label(opt_frame, text="顶", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC).pack(side=tk.LEFT, padx=(2, 0))
+        self.crop_top_var = tk.StringVar(value="0")
+        ttk.Spinbox(opt_frame, textvariable=self.crop_top_var, values=[str(i) for i in range(0, 31)],
+                     width=2, font=("Microsoft YaHei UI", 8)).pack(side=tk.LEFT)
+        tk.Label(opt_frame, text="%", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC).pack(side=tk.LEFT)
+
+        tk.Label(opt_frame, text="底", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC).pack(side=tk.LEFT, padx=(2, 0))
+        self.crop_bot_var = tk.StringVar(value="7")
+        ttk.Spinbox(opt_frame, textvariable=self.crop_bot_var, values=[str(i) for i in range(0, 31)],
+                     width=2, font=("Microsoft YaHei UI", 8)).pack(side=tk.LEFT)
+        tk.Label(opt_frame, text="%", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC).pack(side=tk.LEFT)
 
         self.show_cookie_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(opt_frame, text="Cookie", variable=self.show_cookie_var,
@@ -687,10 +699,12 @@ class App:
         self.progress_label.pack()
 
         remove_wm = self.watermark_var.get()
-        thread = threading.Thread(target=self._do_convert, args=(url, remove_wm), daemon=True)
+        crop_top = int(self.crop_top_var.get())
+        crop_bot = int(self.crop_bot_var.get())
+        thread = threading.Thread(target=self._do_convert, args=(url, remove_wm, crop_top, crop_bot), daemon=True)
         thread.start()
 
-    def _do_convert(self, url: str, remove_wm: bool):
+    def _do_convert(self, url: str, remove_wm: bool, crop_top: int = 0, crop_bot: int = 7):
         temp_dir = None
         try:
             platform = self.current_platform
@@ -729,11 +743,13 @@ class App:
 
             if result.items and any(item.type == 'text' for item in result.items):
                 # Mixed text+image
-                content_to_pdf(result.items, img_path_map, result.title, output_path, remove_watermark=remove_wm)
+                content_to_pdf(result.items, img_path_map, result.title, output_path,
+                             remove_watermark=remove_wm, crop_top=crop_top, crop_bot=crop_bot)
             else:
                 # Images only
                 images_to_pdf([img_path_map[u] for u in img_urls if u in img_path_map],
-                             output_path, remove_watermark=remove_wm)
+                             output_path, remove_watermark=remove_wm,
+                             crop_top=crop_top, crop_bot=crop_bot)
 
             self.output_path = output_path
             self._set_progress(100)

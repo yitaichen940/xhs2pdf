@@ -17,7 +17,8 @@ _FONT_PATH = next((p for p in _FONT_PATHS if os.path.exists(p)), _FONT_PATHS[0])
 
 
 def content_to_pdf(items: list, image_path_map: dict, title: str,
-                   output_path: str, remove_watermark: bool = True):
+                   output_path: str, remove_watermark: bool = True,
+                   crop_top: int = 0, crop_bot: int = 7):
     """Create a mixed text+image PDF from ContentItems."""
     if not items:
         raise ValueError("没有内容可合并为PDF。")
@@ -93,7 +94,7 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
                 continue
             try:
                 if remove_watermark:
-                    img = _crop_watermark(Image.open(local_path))
+                    img = _crop_watermark(Image.open(local_path), crop_top, crop_bot)
                     if img.mode in ('RGBA', 'P', 'LA', 'PA'):
                         bg = Image.new('RGB', img.size, (255, 255, 255))
                         if img.mode == 'P':
@@ -126,7 +127,8 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
     print(f"  PDF已生成: {output_path}")
 
 
-def images_to_pdf(image_paths: list[str], output_path: str, remove_watermark: bool = True):
+def images_to_pdf(image_paths: list[str], output_path: str, remove_watermark: bool = True,
+                  crop_top: int = 0, crop_bot: int = 7):
     """Legacy: combine images only, one per page (for backward compat)."""
     if not image_paths:
         raise ValueError("没有图片可合并为PDF。")
@@ -136,7 +138,7 @@ def images_to_pdf(image_paths: list[str], output_path: str, remove_watermark: bo
         try:
             img = Image.open(path)
             if remove_watermark:
-                img = _crop_watermark(img)
+                img = _crop_watermark(img, crop_top, crop_bot)
             if img.mode in ('RGBA', 'P', 'LA', 'PA'):
                 background = Image.new('RGB', img.size, (255, 255, 255))
                 if img.mode == 'P':
@@ -159,9 +161,10 @@ def images_to_pdf(image_paths: list[str], output_path: str, remove_watermark: bo
     print(f"  PDF已生成: {output_path} ({len(images)} 页)")
 
 
-def _crop_watermark(img: Image.Image) -> Image.Image:
+def _crop_watermark(img: Image.Image, crop_top: int = 0, crop_bot: int = 7) -> Image.Image:
     w, h = img.size
     if h < 400:
         return img
-    crop_px = int(h * 0.07)
-    return img.crop((0, 0, w, h - crop_px))
+    top_px = int(h * crop_top / 100)
+    bot_px = int(h * crop_bot / 100)
+    return img.crop((0, top_px, w, h - bot_px))
