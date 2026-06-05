@@ -89,11 +89,6 @@ class XiaohongshuPlatform(BasePlatform):
         title = re.sub(r'[\\/:*?"<>|\r\n\t]', '_', title).strip()[:80] or 'untitled'
 
         items = []
-        # Add description text if present
-        desc = note.get('desc', '').strip()
-        if desc and desc != title:
-            items.append(ContentItem(type='text', data=desc))
-
         # Add images in order
         for img in note.get('imageList', []):
             url = img.get('url') or img.get('urlDefault') or img.get('urlPre', '')
