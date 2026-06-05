@@ -36,8 +36,10 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
     pdf.multi_cell(0, 12, title, align='L')
     pdf.ln(4)
 
+    had_text = False
     for item in items:
         if item.type == 'text':
+            had_text = True
             # Apply style
             style = getattr(item, 'style', '')
             if style == 'heading':
@@ -89,6 +91,11 @@ def content_to_pdf(items: list, image_path_map: dict, title: str,
             pdf.ln(2)
 
         elif item.type == 'image':
+            # Page break between text and images (for XHS etc.)
+            if had_text:
+                pdf.add_page()
+                had_text = False
+
             local_path = image_path_map.get(item.data, '')
             if not local_path or not os.path.exists(local_path):
                 continue
