@@ -190,19 +190,26 @@ class App:
         opt_frame.pack(fill=tk.X, pady=(0, 8))
 
         self.watermark_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(opt_frame, text="裁剪", variable=self.watermark_var).pack(side=tk.LEFT)
+        ttk.Checkbutton(opt_frame, text="裁剪", variable=self.watermark_var,
+                         command=self._toggle_crop).pack(side=tk.LEFT)
 
-        tk.Label(opt_frame, text="顶", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC).pack(side=tk.LEFT, padx=(2, 0))
+        self.crop_top_lbl = tk.Label(opt_frame, text="顶", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC)
+        self.crop_top_lbl.pack(side=tk.LEFT, padx=(2, 0))
         self.crop_top_var = tk.StringVar(value="0")
-        ttk.Spinbox(opt_frame, textvariable=self.crop_top_var, values=[str(i) for i in range(0, 31)],
-                     width=2, font=("Microsoft YaHei UI", 8)).pack(side=tk.LEFT)
-        tk.Label(opt_frame, text="%", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC).pack(side=tk.LEFT)
+        self.crop_top_spin = ttk.Spinbox(opt_frame, textvariable=self.crop_top_var,
+                     values=[str(i) for i in range(0, 31)], width=2, font=("Microsoft YaHei UI", 8))
+        self.crop_top_spin.pack(side=tk.LEFT)
+        self.crop_top_pct = tk.Label(opt_frame, text="%", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC)
+        self.crop_top_pct.pack(side=tk.LEFT)
 
-        tk.Label(opt_frame, text="底", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC).pack(side=tk.LEFT, padx=(2, 0))
+        self.crop_bot_lbl = tk.Label(opt_frame, text="底", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC)
+        self.crop_bot_lbl.pack(side=tk.LEFT, padx=(2, 0))
         self.crop_bot_var = tk.StringVar(value="7")
-        ttk.Spinbox(opt_frame, textvariable=self.crop_bot_var, values=[str(i) for i in range(0, 31)],
-                     width=2, font=("Microsoft YaHei UI", 8)).pack(side=tk.LEFT)
-        tk.Label(opt_frame, text="%", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC).pack(side=tk.LEFT)
+        self.crop_bot_spin = ttk.Spinbox(opt_frame, textvariable=self.crop_bot_var,
+                     values=[str(i) for i in range(0, 31)], width=2, font=("Microsoft YaHei UI", 8))
+        self.crop_bot_spin.pack(side=tk.LEFT)
+        self.crop_bot_pct = tk.Label(opt_frame, text="%", font=("Microsoft YaHei UI", 8), bg=BG, fg=TEXT_SEC)
+        self.crop_bot_pct.pack(side=tk.LEFT)
 
         self.show_cookie_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(opt_frame, text="Cookie", variable=self.show_cookie_var,
@@ -374,6 +381,12 @@ class App:
             self._set_cookie_color('yellow', f'● Cookie: {self.current_platform.name}未设置')
         else:
             self._set_cookie_color('green', '● Cookie: 无需设置')
+
+    def _toggle_crop(self):
+        state = tk.NORMAL if self.watermark_var.get() else tk.DISABLED
+        for w in [self.crop_top_lbl, self.crop_top_spin, self.crop_top_pct,
+                   self.crop_bot_lbl, self.crop_bot_spin, self.crop_bot_pct]:
+            w.config(state=state)
 
     def _toggle_cookie_panel(self):
         if self.show_cookie_var.get():
